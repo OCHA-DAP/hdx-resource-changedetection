@@ -7,4 +7,3 @@
 This script detects changes to resources on HDX.
 
 ## Running
-
