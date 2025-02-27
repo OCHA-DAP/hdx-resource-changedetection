@@ -1,7 +1,6 @@
-from typing import List, Tuple, Set, Dict
+from typing import Dict, List, Set, Tuple
 from urllib.parse import urlsplit
 
-from hatch.cli import self
 from hdx.api.configuration import Configuration
 from hdx.data.dataset import Dataset
 from hdx.scraper.framework.utilities.reader import Read
@@ -18,10 +17,10 @@ class DatasetProcessor:
     def get_all_datasets(self) -> List[Dataset]:
         reader = Read.get_reader()
         return reader.search_datasets(
-            filename = "datasets",
+            filename="datasets",
             configuration=self._configuration,
-            query = self._configuration["query"],
-            fq = self._configuration.get("fq"),
+            query=self._configuration["query"],
+            fq=self._configuration.get("fq"),
             sort="metadata_created asc",
         )
 
@@ -34,7 +33,14 @@ class DatasetProcessor:
                 size = resource.get("size")
                 last_modified = parse_date(resource["last_modified"])
                 hash = resource.get("hash")
-                self.resources[resource_id] = (url, resource_id, resource_format, size, last_modified, hash)
+                self.resources[resource_id] = (
+                    url,
+                    resource_id,
+                    resource_format,
+                    size,
+                    last_modified,
+                    hash,
+                )
 
     def get_resources(self) -> Dict[str, Tuple]:
         return self.resources

@@ -10,26 +10,29 @@ than the OS to decide when to switch to the next task.
 import asyncio
 import logging
 from timeit import default_timer as timer
-from typing import Dict, List, Optional, Tuple, Set
+from typing import Dict, List, Optional, Set, Tuple
 from urllib.parse import urlsplit
 
 import aiohttp
 from aiohttp import ClientResponseError
 from aiolimiter import AsyncLimiter
 from tenacity import (
+    after_log,
     retry,
-    wait_exponential, retry_if_exception, after_log,
+    retry_if_exception,
+    wait_exponential,
 )
-
-from hdx.utilities.dateparse import parse_date
 from tqdm.asyncio import tqdm_asyncio
-
-from .statuses import HeaderStatus
 
 logger = logging.getLogger(__name__)
 
+
 def is_server_error(exception):
-    return isinstance(exception, aiohttp.ServerTimeoutError) or (isinstance(exception, aiohttp.ClientResponseError) and exception.status in (408, 409, 429, 500, 502, 503, 504))
+    return isinstance(exception, aiohttp.ServerTimeoutError) or (
+        isinstance(exception, aiohttp.ClientResponseError)
+        and exception.status in (408, 409, 429, 500, 502, 503, 504)
+    )
+
 
 class HeadRetrieval:
     """Retrieval class for downloading and hashing resources.
@@ -40,17 +43,23 @@ class HeadRetrieval:
     """
 
     def __init__(
-        self, user_agent: str, netlocs: Set[str], url_ignore: Optional[str] = None
+        self,
+        user_agent: str,
+        netlocs: Set[str],
+        url_ignore: Optional[str] = None,
     ) -> None:
         self._user_agent = user_agent
         self._url_ignore: Optional[str] = url_ignore
         # Limit to 10 connections per second to a host
-        self._rate_limiters = {netloc: AsyncLimiter(10, 1) for netloc in netlocs}
+        self._rate_limiters = {
+            netloc: AsyncLimiter(10, 1) for netloc in netlocs
+        }
 
-    @retry(reraise=True,
+    @retry(
+        reraise=True,
         retry=retry_if_exception(is_server_error),
         wait=wait_exponential(multiplier=4, min=1, max=10),
-        after = after_log(logger, logging.DEBUG)
+        after=after_log(logger, logging.DEBUG),
     )
     async def fetch(
         self,
@@ -68,10 +77,12 @@ class HeadRetrieval:
                 response.close()
                 return resource_id, http_size, http_last_modified, etag, 200
             else:
-                exception = ClientResponseError(code=status,
-                        message=response.reason,
-                        request_info=response.request_info,
-                        history=response.history)
+                exception = ClientResponseError(
+                    code=status,
+                    message=response.reason,
+                    request_info=response.request_info,
+                    history=response.history,
+                )
                 response.close()
                 raise exception
 
@@ -117,8 +128,9 @@ class HeadRetrieval:
         """
         tasks = []
 
+        # Maximum of 10 simultaneous connections to a host
         conn = aiohttp.TCPConnector(limit_per_host=10)
-        # can set some timeouts here if needed
+        # Can set some timeouts here if needed
         timeout = aiohttp.ClientTimeout()
         async with aiohttp.ClientSession(
             connector=conn,
@@ -130,10 +142,19 @@ class HeadRetrieval:
                 tasks.append(task)
             responses = {}
             for f in tqdm_asyncio.as_completed(tasks, total=len(tasks)):
-                resource_id, http_size, http_last_modified, etag, status = await f
+                (
+                    resource_id,
+                    http_size,
+                    http_last_modified,
+                    etag,
+                    status,
+                ) = await f
 
                 responses[resource_id] = (
-                    http_size, http_last_modified, etag, status
+                    http_size,
+                    http_last_modified,
+                    etag,
+                    status,
                 )
             return responses
 

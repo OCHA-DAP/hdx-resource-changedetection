@@ -3,14 +3,13 @@
 import logging
 from os.path import expanduser, join
 
-from hdx.resource.changedetection.dataset_processor import DatasetProcessor
-from hdx.resource.changedetection.head_results import HeadResults
-from hdx.resource.changedetection.head_retrieval import HeadRetrieval
-from hdx.resource.changedetection.retrieval import Retrieval
 from . import __version__
 from hdx.api.configuration import Configuration
 from hdx.data.user import User
 from hdx.facades.infer_arguments import facade
+from hdx.resource.changedetection.dataset_processor import DatasetProcessor
+from hdx.resource.changedetection.head_results import HeadResults
+from hdx.resource.changedetection.head_retrieval import HeadRetrieval
 from hdx.scraper.framework.utilities.reader import Read
 from hdx.utilities.dateparse import now_utc
 from hdx.utilities.easy_logging import setup_logging
@@ -24,6 +23,7 @@ logger = logging.getLogger(__name__)
 
 lookup = "hdx-resource-changedetection"
 updated_by_script = "HDX Resource Change Detection"
+
 
 def main(
     save: bool = False,
@@ -62,7 +62,9 @@ def main(
         datasets = dataset_processor.get_all_datasets()
         dataset_processor.process(datasets)
         netlocs = dataset_processor.get_netlocs()
-        resources_to_check = dataset_processor.get_distributed_resources_to_check()
+        resources_to_check = (
+            dataset_processor.get_distributed_resources_to_check()
+        )
         retrieval = HeadRetrieval(configuration.get_user_agent(), netlocs)
         results = retrieval.retrieve(resources_to_check)
 

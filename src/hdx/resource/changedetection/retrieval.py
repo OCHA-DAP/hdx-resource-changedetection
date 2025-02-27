@@ -12,7 +12,7 @@ import hashlib
 import logging
 from io import BytesIO
 from timeit import default_timer as timer
-from typing import Dict, List, Optional, Tuple, Set
+from typing import Dict, List, Optional, Set, Tuple
 from urllib.parse import urlsplit
 
 import aiohttp
@@ -23,11 +23,7 @@ from tenacity import (
     retry_if_exception_type,
     wait_exponential,
 )
-
-from hdx.utilities.dateparse import parse_date
 from tqdm.asyncio import tqdm_asyncio
-
-from .statuses import HeaderStatus
 
 logger = logging.getLogger(__name__)
 
@@ -63,11 +59,16 @@ class Retrieval:
     }
 
     def __init__(
-        self, user_agent: str, netlocs: Set[str], url_ignore: Optional[str] = None
+        self,
+        user_agent: str,
+        netlocs: Set[str],
+        url_ignore: Optional[str] = None,
     ) -> None:
         self._user_agent = user_agent
         self._url_ignore: Optional[str] = url_ignore
-        self._rate_limiters = {netloc: AsyncLimiter(2, 1) for netloc in netlocs}
+        self._rate_limiters = {
+            netloc: AsyncLimiter(2, 1) for netloc in netlocs
+        }
 
     @retry(
         retry=retry_if_exception_type(

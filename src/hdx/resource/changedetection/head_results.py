@@ -1,10 +1,13 @@
 import logging
-from typing import Tuple, Dict
+from typing import Dict, Tuple
 
 logger = logging.getLogger(__name__)
 
+
 class HeadResults:
-    def __init__(self, results: Dict[str, Tuple], resources: Dict[str, Tuple]) -> None:
+    def __init__(
+        self, results: Dict[str, Tuple], resources: Dict[str, Tuple]
+    ) -> None:
         self.results = results
         self.resources = resources
         self.changes = {}
@@ -37,4 +40,3 @@ class HeadResults:
     def output(self) -> None:
         for what_changed, count in self.changes.items():
             logger.info(f"{what_changed}: {count}")
-
