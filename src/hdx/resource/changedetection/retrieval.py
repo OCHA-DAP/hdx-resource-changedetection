@@ -16,14 +16,18 @@ from typing import Dict, List, Optional, Set, Tuple
 from urllib.parse import urlsplit
 
 import aiohttp
+from aiohttp import ClientResponseError
 from aiolimiter import AsyncLimiter
 from openpyxl import load_workbook
 from tenacity import (
+    after_log,
     retry,
-    retry_if_exception_type,
+    retry_if_exception,
     wait_exponential,
 )
 from tqdm.asyncio import tqdm_asyncio
+
+from .server_error import is_server_error
 
 logger = logging.getLogger(__name__)
 
@@ -66,15 +70,16 @@ class Retrieval:
     ) -> None:
         self._user_agent = user_agent
         self._url_ignore: Optional[str] = url_ignore
+        # Limit to 10 connections per second to a host
         self._rate_limiters = {
-            netloc: AsyncLimiter(2, 1) for netloc in netlocs
+            netloc: AsyncLimiter(10, 1) for netloc in netlocs
         }
 
     @retry(
-        retry=retry_if_exception_type(
-            (aiohttp.ClientConnectionError, asyncio.TimeoutError)
-        ),
-        wait=wait_exponential(multiplier=4, min=5, max=30),
+        reraise=True,
+        retry=retry_if_exception(is_server_error),
+        wait=wait_exponential(multiplier=4, min=1, max=10),
+        after=after_log(logger, logging.DEBUG),
     )
     async def fetch(
         self,
@@ -98,95 +103,129 @@ class Retrieval:
         last_modified = metadata[4]
         hash = metadata[5]
 
+        async with session.get(url) as response:
+            status = response.status
+            if status != 200:
+                exception = ClientResponseError(
+                    code=status,
+                    message=response.reason,
+                    request_info=response.request_info,
+                    history=response.history,
+                )
+                raise exception
+            headers = response.headers
+            http_size = headers.get("Content-Length")
+            http_last_modified = headers.get("Last-Modified")
+            etag = headers.get("Etag")
+            if etag:
+                return resource_id, http_size, http_last_modified, etag, 200
+
+            mimetype = headers.get("Content-Type")
+            try:
+                iterator = response.content.iter_any()
+                first_chunk = await iterator.__anext__()
+                signature = first_chunk[:4]
+                if (
+                    resource_format == "xlsx"
+                    and mimetype == self.mimetypes["xlsx"][0]
+                    and signature == self.signatures["xlsx"][0]
+                    and (
+                        self._url_ignore not in url
+                        if self._url_ignore
+                        else True
+                    )
+                ):
+                    xlsxbuffer = bytearray(first_chunk)
+                else:
+                    xlsxbuffer = None
+                md5hash = hashlib.md5(first_chunk)
+                async for chunk in iterator:
+                    if chunk:
+                        md5hash.update(chunk)
+                        if xlsxbuffer:
+                            xlsxbuffer.extend(chunk)
+                if xlsxbuffer:
+                    workbook = load_workbook(
+                        filename=BytesIO(xlsxbuffer), read_only=True
+                    )
+                    xlsx_md5hash = hashlib.md5()
+                    for sheet_name in workbook.sheetnames:
+                        sheet = workbook[sheet_name]
+                        for cols in sheet.iter_rows(values_only=True):
+                            xlsx_md5hash.update(bytes(str(cols), "utf-8"))
+                    workbook.close()
+                    xlsxbuffer = None
+                else:
+                    xlsx_md5hash = None
+                err = None
+                if mimetype not in self.ignore_mimetypes:
+                    expected_mimetypes = self.mimetypes.get(resource_format)
+                    if expected_mimetypes is not None:
+                        if not any(x in mimetype for x in expected_mimetypes):
+                            err = f"File mimetype {mimetype} {self.notmatcherror} {resource_format}!"
+                expected_signatures = self.signatures.get(resource_format)
+                if expected_signatures is not None:
+                    found = False
+                    for expected_signature in expected_signatures:
+                        if (
+                            signature[: len(expected_signature)]
+                            == expected_signature
+                        ):
+                            found = True
+                            break
+                    if not found:
+                        sigerr = f"File signature {signature} {self.notmatcherror} {resource_format}!"
+                        if err is None:
+                            err = sigerr
+                        else:
+                            err = f"{err} {sigerr}"
+                return (
+                    resource_id,
+                    url,
+                    resource_format,
+                    err,
+                    md5hash.hexdigest(),
+                    xlsx_md5hash.hexdigest() if xlsx_md5hash else None,
+                )
+            except Exception as exc:
+                try:
+                    code = exc.code
+                except AttributeError:
+                    code = ""
+                err = f"Exception during hashing: code={code} message={exc} raised={exc.__class__.__module__}.{exc.__class__.__qualname__} url={url}"
+                raise aiohttp.ClientResponseError(
+                    code=code,
+                    message=err,
+                    request_info=response.request_info,
+                    history=response.history,
+                ) from exc
+
+    async def process(
+        self,
+        metadata: Tuple,
+        session: aiohttp.ClientSession,
+    ) -> Tuple:
+        """Asynchronous code to download a resource and hash it. Returns a tuple with
+        resource information including hashes.
+
+        Args:
+            metadata (Tuple): Resource to be checked
+            session (Union[aiohttp.ClientSession, RateLimiter]): session to use for requests
+
+        Returns:
+            Tuple: Resource information including hash
+        """
+        url = metadata[0]
+        resource_id = metadata[1]
+
         host = urlsplit(url).netloc
 
         async with self._rate_limiters[host]:
-            async with session.get(url) as response:
-                headers = response.headers
-                mimetype = headers.get("Content-Type")
-
-                try:
-                    iterator = response.content.iter_any()
-                    first_chunk = await iterator.__anext__()
-                    signature = first_chunk[:4]
-                    if (
-                        resource_format == "xlsx"
-                        and mimetype == self.mimetypes["xlsx"][0]
-                        and signature == self.signatures["xlsx"][0]
-                        and (
-                            self._url_ignore not in url
-                            if self._url_ignore
-                            else True
-                        )
-                    ):
-                        xlsxbuffer = bytearray(first_chunk)
-                    else:
-                        xlsxbuffer = None
-                    md5hash = hashlib.md5(first_chunk)
-                    async for chunk in iterator:
-                        if chunk:
-                            md5hash.update(chunk)
-                            if xlsxbuffer:
-                                xlsxbuffer.extend(chunk)
-                    if xlsxbuffer:
-                        workbook = load_workbook(
-                            filename=BytesIO(xlsxbuffer), read_only=True
-                        )
-                        xlsx_md5hash = hashlib.md5()
-                        for sheet_name in workbook.sheetnames:
-                            sheet = workbook[sheet_name]
-                            for cols in sheet.iter_rows(values_only=True):
-                                xlsx_md5hash.update(bytes(str(cols), "utf-8"))
-                        workbook.close()
-                        xlsxbuffer = None
-                    else:
-                        xlsx_md5hash = None
-                    err = None
-                    if mimetype not in self.ignore_mimetypes:
-                        expected_mimetypes = self.mimetypes.get(
-                            resource_format
-                        )
-                        if expected_mimetypes is not None:
-                            if not any(
-                                x in mimetype for x in expected_mimetypes
-                            ):
-                                err = f"File mimetype {mimetype} {self.notmatcherror} {resource_format}!"
-                    expected_signatures = self.signatures.get(resource_format)
-                    if expected_signatures is not None:
-                        found = False
-                        for expected_signature in expected_signatures:
-                            if (
-                                signature[: len(expected_signature)]
-                                == expected_signature
-                            ):
-                                found = True
-                                break
-                        if not found:
-                            sigerr = f"File signature {signature} {self.notmatcherror} {resource_format}!"
-                            if err is None:
-                                err = sigerr
-                            else:
-                                err = f"{err} {sigerr}"
-                    return (
-                        resource_id,
-                        url,
-                        resource_format,
-                        err,
-                        md5hash.hexdigest(),
-                        xlsx_md5hash.hexdigest() if xlsx_md5hash else None,
-                    )
-                except Exception as exc:
-                    try:
-                        code = exc.code
-                    except AttributeError:
-                        code = ""
-                    err = f"Exception during hashing: code={code} message={exc} raised={exc.__class__.__module__}.{exc.__class__.__qualname__} url={url}"
-                    raise aiohttp.ClientResponseError(
-                        code=code,
-                        message=err,
-                        request_info=response.request_info,
-                        history=response.history,
-                    ) from exc
+            try:
+                return await self.fetch(url, resource_id, session)
+            except Exception as ex:
+                logger.info(ex)
+                return resource_id, None, None, None, -1
 
     async def check_urls(
         self, resources_to_check: List[Tuple]
@@ -203,36 +242,33 @@ class Retrieval:
         """
         tasks = []
 
-        conn = aiohttp.TCPConnector(limit=100, limit_per_host=1)
-        timeout = aiohttp.ClientTimeout(
-            total=60 * 60, sock_connect=30, sock_read=30
-        )
+        # Maximum of 10 simultaneous connections to a host
+        conn = aiohttp.TCPConnector(limit_per_host=10)
+        # Can set some timeouts here if needed
+        timeout = aiohttp.ClientTimeout()
         async with aiohttp.ClientSession(
             connector=conn,
             timeout=timeout,
             headers={"User-Agent": self._user_agent},
         ) as session:
             for metadata in resources_to_check:
-                task = self.fetch(metadata, session)
+                task = self.process(metadata, session)
                 tasks.append(task)
             responses = {}
             for f in tqdm_asyncio.as_completed(tasks, total=len(tasks)):
                 (
                     resource_id,
-                    url,
-                    resource_format,
-                    err,
+                    http_size,
                     http_last_modified,
-                    hash,
-                    hash_xlsx,
+                    etag,
+                    status,
                 ) = await f
+
                 responses[resource_id] = (
-                    url,
-                    resource_format,
-                    err,
+                    http_size,
                     http_last_modified,
-                    hash,
-                    hash_xlsx,
+                    etag,
+                    status,
                 )
             return responses
 

@@ -24,14 +24,9 @@ from tenacity import (
 )
 from tqdm.asyncio import tqdm_asyncio
 
+from .server_error import is_server_error
+
 logger = logging.getLogger(__name__)
-
-
-def is_server_error(exception):
-    return isinstance(exception, aiohttp.ServerTimeoutError) or (
-        isinstance(exception, aiohttp.ClientResponseError)
-        and exception.status in (408, 409, 429, 500, 502, 503, 504)
-    )
 
 
 class HeadRetrieval:
@@ -67,14 +62,13 @@ class HeadRetrieval:
         resource_id: str,
         session: aiohttp.ClientSession,
     ) -> Tuple:
-        async with session.get(url, allow_redirects=True) as response:
+        async with session.head(url, allow_redirects=True) as response:
             status = response.status
             if status == 200:
                 headers = response.headers
                 http_size = headers.get("Content-Length")
                 http_last_modified = headers.get("Last-Modified")
                 etag = headers.get("Etag")
-                response.close()
                 return resource_id, http_size, http_last_modified, etag, 200
             else:
                 exception = ClientResponseError(
@@ -83,7 +77,6 @@ class HeadRetrieval:
                     request_info=response.request_info,
                     history=response.history,
                 )
-                response.close()
                 raise exception
 
     async def process(
@@ -91,15 +84,15 @@ class HeadRetrieval:
         metadata: Tuple,
         session: aiohttp.ClientSession,
     ) -> Tuple:
-        """Asynchronous code to download a resource and hash it. Returns a tuple with
-        resource information including hashes.
+        """Asynchronous code to get http headers for a resource. Returns a
+        tuple with http headers including etag.
 
         Args:
             metadata (Tuple): Resource to be checked
             session (Union[aiohttp.ClientSession, RateLimiter]): session to use for requests
 
         Returns:
-            Tuple: Resource information including hash
+            Tuple: Header information including etag
         """
         url = metadata[0]
         resource_id = metadata[1]
@@ -110,7 +103,7 @@ class HeadRetrieval:
             try:
                 return await self.fetch(url, resource_id, session)
             except Exception as ex:
-                logger.exception(ex)
+                logger.info(ex)
                 return resource_id, None, None, None, -1
 
     async def check_urls(

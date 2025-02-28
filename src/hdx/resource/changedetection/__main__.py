@@ -4,12 +4,13 @@ import logging
 from os.path import expanduser, join
 
 from . import __version__
+from .dataset_processor import DatasetProcessor
+from .head_results import HeadResults
+from .head_retrieval import HeadRetrieval
+from .retrieval import Retrieval
 from hdx.api.configuration import Configuration
 from hdx.data.user import User
 from hdx.facades.infer_arguments import facade
-from hdx.resource.changedetection.dataset_processor import DatasetProcessor
-from hdx.resource.changedetection.head_results import HeadResults
-from hdx.resource.changedetection.head_retrieval import HeadRetrieval
 from hdx.scraper.framework.utilities.reader import Read
 from hdx.utilities.dateparse import now_utc
 from hdx.utilities.easy_logging import setup_logging
@@ -61,16 +62,22 @@ def main(
         dataset_processor = DatasetProcessor(configuration)
         datasets = dataset_processor.get_all_datasets()
         dataset_processor.process(datasets)
-        netlocs = dataset_processor.get_netlocs()
+
         resources_to_check = (
             dataset_processor.get_distributed_resources_to_check()
         )
+        netlocs = dataset_processor.get_netlocs()
         retrieval = HeadRetrieval(configuration.get_user_agent(), netlocs)
         results = retrieval.retrieve(resources_to_check)
 
         head_results = HeadResults(results, dataset_processor.get_resources())
         head_results.process()
         head_results.output()
+
+        resources_to_get = head_results.get_distributed_resources_to_get()
+        netlocs = head_results.get_netlocs()
+        retrieval = Retrieval(configuration.get_user_agent(), netlocs)
+#        results = retrieval.retrieve(resources_to_get)
 
     logger.info(f"{updated_by_script} completed!")
 

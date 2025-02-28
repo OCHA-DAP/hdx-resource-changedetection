@@ -12,7 +12,7 @@ class DatasetProcessor:
     def __init__(self, configuration: Configuration):
         self._configuration = configuration
         self._netlocs = set()
-        self.resources = {}
+        self._resources = {}
 
     def get_all_datasets(self) -> List[Dataset]:
         reader = Read.get_reader()
@@ -33,7 +33,7 @@ class DatasetProcessor:
                 size = resource.get("size")
                 last_modified = parse_date(resource["last_modified"])
                 hash = resource.get("hash")
-                self.resources[resource_id] = (
+                self._resources[resource_id] = (
                     url,
                     resource_id,
                     resource_format,
@@ -43,7 +43,7 @@ class DatasetProcessor:
                 )
 
     def get_resources(self) -> Dict[str, Tuple]:
-        return self.resources
+        return self._resources
 
     def get_distributed_resources_to_check(self) -> List[Tuple]:
         def get_netloc(x):
@@ -52,7 +52,7 @@ class DatasetProcessor:
             return netloc
 
         return list_distribute_contents(
-            list(self.resources.values()), get_netloc
+            list(self._resources.values()), get_netloc
         )
 
     def get_netlocs(self) -> Set[str]:
