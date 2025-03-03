@@ -98,7 +98,9 @@ class Retrieval:
         Returns:
             Tuple: Resource information including hash
         """
-        async with session.get(url, chunked=True) as response:
+        async with session.get(
+            url, allow_redirects=True, chunked=True
+        ) as response:
             status = response.status
             if status != 200:
                 exception = ClientResponseError(
