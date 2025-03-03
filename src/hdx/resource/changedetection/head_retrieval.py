@@ -24,7 +24,7 @@ from tenacity import (
 )
 from tqdm.asyncio import tqdm_asyncio
 
-from .server_error import is_server_error
+from .utilities import is_server_error
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +62,18 @@ class HeadRetrieval:
         resource_id: str,
         session: aiohttp.ClientSession,
     ) -> Tuple:
+        """Asynchronous code to get http headers for a resource. Returns a
+        tuple with http headers including etag.
+
+        Args:
+            url (str): Resource to get
+            resource_id (str): Resource id
+            resource_format (str): Resource format
+            session (Union[aiohttp.ClientSession, RateLimiter]): session to use for requests
+
+        Returns:
+            Tuple: Resource information including hash
+        """
         async with session.head(url, allow_redirects=True) as response:
             status = response.status
             if status == 200:
@@ -84,8 +96,9 @@ class HeadRetrieval:
         metadata: Tuple,
         session: aiohttp.ClientSession,
     ) -> Tuple:
-        """Asynchronous code to get http headers for a resource. Returns a
-        tuple with http headers including etag.
+        """Asynchronous code to get http headers for a resource with rate
+        limiting and exception handling. Returns a tuple with http headers
+        including etag.
 
         Args:
             metadata (Tuple): Resource to be checked
@@ -102,9 +115,12 @@ class HeadRetrieval:
         async with self._rate_limiters[host]:
             try:
                 return await self.fetch(url, resource_id, session)
+            except ClientResponseError as ex:
+                logger.info(ex)
+                return resource_id, None, None, None, ex.status
             except Exception as ex:
                 logger.info(ex)
-                return resource_id, None, None, None, -1
+                return resource_id, None, None, None, -100
 
     async def check_urls(
         self, resources_to_check: List[Tuple]

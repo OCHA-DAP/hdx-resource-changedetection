@@ -7,10 +7,12 @@ from . import __version__
 from .dataset_processor import DatasetProcessor
 from .head_results import HeadResults
 from .head_retrieval import HeadRetrieval
+from .results import Results
 from .retrieval import Retrieval
 from hdx.api.configuration import Configuration
 from hdx.data.user import User
 from hdx.facades.infer_arguments import facade
+from hdx.resource.changedetection.resource_updater import ResourceUpdater
 from hdx.scraper.framework.utilities.reader import Read
 from hdx.utilities.dateparse import now_utc
 from hdx.utilities.easy_logging import setup_logging
@@ -77,7 +79,24 @@ def main(
         resources_to_get = head_results.get_distributed_resources_to_get()
         netlocs = head_results.get_netlocs()
         retrieval = Retrieval(configuration.get_user_agent(), netlocs)
-#        results = retrieval.retrieve(resources_to_get)
+        results = retrieval.retrieve(resources_to_get)
+
+        results = Results(results, dataset_processor.get_resources())
+        results.process()
+        results.output()
+
+        resource_updater = ResourceUpdater(configuration)
+        resources_to_update = head_results.get_resources_to_update()
+        resources_to_update.update(results.get_resources_to_update())
+        # async this?
+        for resource_id, resource_info in resources_to_update.items():
+            resource_updater.update_resource(
+                resource_id,
+                resource_info[0],
+                resource_info[1],
+                resource_info[2],
+            )
+        resource_updater.output()
 
     logger.info(f"{updated_by_script} completed!")
 
