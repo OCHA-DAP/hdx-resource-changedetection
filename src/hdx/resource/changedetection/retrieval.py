@@ -115,7 +115,6 @@ class Retrieval:
             if etag:
                 return resource_id, http_size, http_last_modified, etag, 200
             if http_size and int(http_size) > 419430400:
-                response.close()
                 return resource_id, http_size, http_last_modified, None, -100
 
             mimetype = headers.get("Content-Type")
@@ -223,7 +222,7 @@ class Retrieval:
         # Maximum of 10 simultaneous connections to a host
         conn = aiohttp.TCPConnector(limit_per_host=10)
         # Can set some timeouts here if needed
-        timeout = aiohttp.ClientTimeout()
+        timeout = aiohttp.ClientTimeout(total=5 * 60, sock_connect=30)
         async with aiohttp.ClientSession(
             connector=conn,
             timeout=timeout,

@@ -140,7 +140,7 @@ class HeadRetrieval:
         # Maximum of 10 simultaneous connections to a host
         conn = aiohttp.TCPConnector(limit_per_host=10)
         # Can set some timeouts here if needed
-        timeout = aiohttp.ClientTimeout()
+        timeout = aiohttp.ClientTimeout(total=5 * 60, sock_connect=30)
         async with aiohttp.ClientSession(
             connector=conn,
             timeout=timeout,
