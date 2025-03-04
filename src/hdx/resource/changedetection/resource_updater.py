@@ -17,7 +17,7 @@ class ResourceUpdater:
         self._count += 1
         # resource = Resource.read_from_hdx(resource_id, configuration=self.configuration)
         # if size:
-        # resource["size"] = size
+        #     resource["size"] = size
         # if last_modified:
         #     resource["last_modified"] = last_modified.isoformat()
         # if hash:
