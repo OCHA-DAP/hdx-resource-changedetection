@@ -17,13 +17,13 @@ import aiohttp
 from aiohttp import ClientResponseError
 from aiolimiter import AsyncLimiter
 from tenacity import (
-    after_log,
     retry,
     retry_if_exception,
-    wait_exponential,
+    stop_after_attempt,
 )
 from tqdm.asyncio import tqdm_asyncio
 
+from .tenacity_custom_wait import custom_wait
 from .utilities import is_server_error
 
 logger = logging.getLogger(__name__)
@@ -45,16 +45,16 @@ class HeadRetrieval:
     ) -> None:
         self._user_agent = user_agent
         self._url_ignore: Optional[str] = url_ignore
-        # Limit to 10 connections per second to a host
+        # Limit to 4 connections per second to a host
         self._rate_limiters = {
-            netloc: AsyncLimiter(10, 1) for netloc in netlocs
+            netloc: AsyncLimiter(4, 1) for netloc in netlocs
         }
 
     @retry(
         reraise=True,
         retry=retry_if_exception(is_server_error),
-        wait=wait_exponential(multiplier=4, min=1, max=10),
-        after=after_log(logger, logging.DEBUG),
+        stop=stop_after_attempt(3),
+        wait=custom_wait(multiplier=2, min=4),
     )
     async def fetch(
         self,
@@ -116,10 +116,10 @@ class HeadRetrieval:
             try:
                 return await self.fetch(url, resource_id, session)
             except ClientResponseError as ex:
-                logger.info(ex)
+                logger.error(f"{ex.status} {ex.message} {ex.request_info.url}")
                 return resource_id, None, None, None, ex.status
             except Exception as ex:
-                logger.info(ex)
+                logger.error(ex)
                 return resource_id, None, None, None, -100
 
     async def check_urls(
