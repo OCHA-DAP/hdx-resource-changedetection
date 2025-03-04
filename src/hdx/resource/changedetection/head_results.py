@@ -1,8 +1,9 @@
 import logging
+from http import HTTPStatus
 from typing import Dict, List, Set, Tuple
 from urllib.parse import urlsplit
 
-from hdx.resource.changedetection.utilities import status_lookup
+from .utilities import log_output, status_lookup
 from hdx.utilities.dateparse import parse_date
 from hdx.utilities.dictandlist import (
     dict_of_lists_add,
@@ -29,14 +30,16 @@ class HeadResults:
             what_changed = []
             resource = self.resources[resource_id]
             http_size, http_last_modified, etag, status = result
-            if status != 200:
-                if status in (403, 429):
+            if status != HTTPStatus.OK:
+                status_str = status_lookup[status]
+                if status in (
+                    HTTPStatus.FORBIDDEN,
+                    HTTPStatus.TOO_MANY_REQUESTS,
+                ):
                     # Server may not like HEAD requests or too many requests
                     self._resources_to_get[resource_id] = resource
-                    status = str(status)
-                    dict_of_lists_add(self._retrying, status, resource_id)
-                what_changed = status_lookup.get(status, f"status {status}")
-                dict_of_lists_add(self._changes, what_changed, resource_id)
+                    dict_of_lists_add(self._retrying, status_str, resource_id)
+                dict_of_lists_add(self._changes, status_str, resource_id)
                 continue
             get_resource = False
             etag_unchanged = True
@@ -79,21 +82,9 @@ class HeadResults:
 
     def output(self) -> None:
         logger.info("\nChanges detected:")
-        for what_changed, resource_ids in self._changes.items():
-            count = len(resource_ids)
-            if count < 5:
-                resource_ids = ", ".join(resource_ids)
-                logger.info(f"{what_changed}: {resource_ids}")
-            else:
-                logger.info(f"{what_changed}: {count}")
+        log_output(self._changes)
         logger.info("\nWill get these:")
-        for status, resource_ids in self._retrying.items():
-            count = len(resource_ids)
-            if count < 5:
-                resource_ids = ", ".join(resource_ids)
-                logger.info(f"{status}: {resource_ids}")
-            else:
-                logger.info(f"{status}: {count}")
+        log_output(self._retrying)
 
     def get_distributed_resources_to_get(self) -> List[Tuple]:
         def get_netloc(x):
