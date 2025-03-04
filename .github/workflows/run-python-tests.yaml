@@ -5,13 +5,13 @@ name: Run tests
 
 on:
   workflow_dispatch: # add run button in github
-#  push:
-#    branches-ignore:
-#      - gh-pages
-#      - 'dependabot/**'
-#  pull_request:
-#    branches-ignore:
-#      - gh-pages
+  push:
+    branches-ignore:
+      - gh-pages
+      - 'dependabot/**'
+  pull_request:
+    branches-ignore:
+      - gh-pages
 
 jobs:
   build:
