@@ -5,12 +5,12 @@ Unit tests for the retrieval class.
 
 from pytest_check import check
 
-from hdx.resource.changedetection.head_retrieval import HeadRetrieval
+from hdx.resource.changedetection.retrieval import Retrieval
 
 
-class TestHeadRetrieve:
+class TestRetrieve:
     def test_retrieval(self, urls, netlocs):
-        result = HeadRetrieval(
+        result = Retrieval(
             "test",
             netlocs,
         ).retrieve(urls)
@@ -90,9 +90,19 @@ class TestHeadRetrieve:
         )
         check.equal(
             result["16"],
-            ("30776", "Thu, 11 Mar 2021 17:21:43 GMT", None, 200),
+            (
+                "30776",
+                "Thu, 11 Mar 2021 17:21:43 GMT",
+                "abfe9f3bada6c937e8103e215c826451",
+                0,
+            ),
         )
         check.equal(
             result["17"],
-            ("1787826", "Thu, 27 Jan 2022 21:30:41 GMT", None, 200),
+            (
+                "1787826",
+                "Thu, 27 Jan 2022 21:30:41 GMT",
+                "aa22983cc9d5a474fd2c77068a747c0e",
+                0,
+            ),
         )

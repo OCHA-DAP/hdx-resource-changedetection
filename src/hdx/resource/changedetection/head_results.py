@@ -9,26 +9,28 @@ from hdx.utilities.dictandlist import (
     dict_of_lists_add,
     list_distribute_contents,
 )
+from hdx.utilities.typehint import ListTuple
 
 logger = logging.getLogger(__name__)
 
 
 class HeadResults:
     def __init__(
-        self, results: Dict[str, Tuple], resources: Dict[str, Tuple]
+        self, results: Dict[str, ListTuple], resources: Dict[str, Tuple]
     ) -> None:
-        self.results = results
-        self.resources = resources
+        self._results = results
+        self._resources = resources
         self._resources_to_get = {}
         self._resources_to_update = {}
-        self._changes = {}
+        self._change_output = {}
         self._netlocs = set()
-        self._retrying = {}
+        self._get_output = {}
 
     def process(self) -> None:
-        for resource_id, result in self.results.items():
+        for resource_id, result in self._results.items():
             what_changed = []
-            resource = self.resources[resource_id]
+            why_get = []
+            resource = self._resources[resource_id]
             http_size, http_last_modified, etag, status = result
             if status != HTTPStatus.OK:
                 status_str = status_lookup[status]
@@ -38,10 +40,14 @@ class HeadResults:
                 ):
                     # Server may not like HEAD requests or too many requests
                     self._resources_to_get[resource_id] = resource
-                    dict_of_lists_add(self._retrying, status_str, resource_id)
-                dict_of_lists_add(self._changes, status_str, resource_id)
+                    dict_of_lists_add(
+                        self._get_output, status_str, resource_id
+                    )
+                dict_of_lists_add(self._change_output, status_str, resource_id)
                 continue
+
             get_resource = False
+
             etag_unchanged = True
             if etag:
                 if etag != resource[5]:
@@ -49,30 +55,46 @@ class HeadResults:
                     etag_unchanged = False
             else:
                 status = "no etag"
-                what_changed.append(status)
+                why_get.append(status)
                 get_resource = True
+                if resource[5]:
+                    what_changed.append(status)
+
             if http_size:
+                http_size = int(http_size)
                 if http_size != resource[3]:
                     status = "size"
                     what_changed.append(status)
                     if etag_unchanged:
+                        why_get.append(status)
                         get_resource = True
             else:
-                what_changed.append("no size")
+                if resource[3]:
+                    what_changed.append("no size")
+
             if http_last_modified:
                 http_last_modified = parse_date(http_last_modified)
-                if http_last_modified != resource[4]:
+                resource_date = resource[4]
+                if not resource_date or http_last_modified > resource_date:
                     status = "modified"
                     what_changed.append(status)
                     if etag_unchanged:
+                        why_get.append(status)
                         get_resource = True
+                elif http_last_modified < resource_date:
+                    what_changed.append("modified: http<resource")
             else:
-                what_changed.append("no modified")
+                if resource[4]:
+                    what_changed.append("no modified")
+
             what_changed = "|".join(what_changed)
-            dict_of_lists_add(self._changes, what_changed, resource_id)
+            if not what_changed:
+                what_changed = "nothing"
+            dict_of_lists_add(self._change_output, what_changed, resource_id)
             if get_resource:
                 self._resources_to_get[resource_id] = resource
-                dict_of_lists_add(self._retrying, status, resource_id)
+                why_get = "|".join(why_get)
+                dict_of_lists_add(self._get_output, why_get, resource_id)
             if not etag_unchanged:
                 self._resources_to_update[resource_id] = (
                     http_size,
@@ -80,11 +102,18 @@ class HeadResults:
                     etag,
                 )
 
-    def output(self) -> None:
-        logger.info("\nChanges detected:")
-        log_output(self._changes)
-        logger.info("\nWill get these:")
-        log_output(self._retrying)
+    def output(self) -> Tuple[List[str], List[str]]:
+        if self._change_output:
+            logger.info("\nChanges detected:")
+            change_output = log_output(self._change_output)
+        else:
+            change_output = []
+        if self._get_output:
+            logger.info("\nWill get these:")
+            get_output = log_output(self._get_output)
+        else:
+            get_output = []
+        return change_output, get_output
 
     def get_distributed_resources_to_get(self) -> List[Tuple]:
         def get_netloc(x):

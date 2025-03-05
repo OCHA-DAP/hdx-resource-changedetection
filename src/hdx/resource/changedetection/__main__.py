@@ -81,13 +81,14 @@ def main(
         retrieval = Retrieval(configuration.get_user_agent(), netlocs)
         results = retrieval.retrieve(resources_to_get)
 
-        results = Results(results, dataset_processor.get_resources())
+        results = Results(today, results, dataset_processor.get_resources())
         results.process()
         results.output()
 
-        resource_updater = ResourceUpdater(configuration)
         resources_to_update = head_results.get_resources_to_update()
         resources_to_update.update(results.get_resources_to_update())
+        resource_updater = ResourceUpdater(configuration)
+
         # async this?
         for resource_id, resource_info in resources_to_update.items():
             resource_updater.update_resource(
