@@ -35,6 +35,13 @@ class TestResults:
         results.process()
         check.equal(results.output(), ["size|today: 1a2b"])
 
+        # today < resource date so don't change resource date
+        today = datetime(2019, 11, 9, 8, 4, 27, tzinfo=timezone.utc)
+        results = Results(today, results_input, resources)
+        results.process()
+        check.equal(results.output(), ["size: 1a2b"])
+
+        today = datetime(2019, 11, 10, 8, 4, 27, tzinfo=timezone.utc)
         result[0] = 357102
         result[1] = "Sun, 10 Nov 2019 08:04:27 GMT"
         results = Results(today, results_input, resources)
