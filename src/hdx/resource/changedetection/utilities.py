@@ -11,6 +11,7 @@ status_lookup.update(
     {
         -1: "MIMETYPE != HDX FORMAT",
         -2: "SIGNATURE != HDX FORMAT",
+        -3: "SIZE != HTTP SIZE",
         -99: "TOO LARGE TO HASH",
         -100: "UNSPECIFIED SERVER ERROR",
     }

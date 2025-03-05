@@ -112,6 +112,8 @@ class Retrieval:
                 raise exception
             headers = response.headers
             http_size = headers.get("Content-Length")
+            if http_size:
+                http_size = int(http_size)
             http_last_modified = headers.get("Last-Modified")
             etag = headers.get("Etag")
             if etag:
@@ -122,6 +124,7 @@ class Retrieval:
             mimetype = headers.get("Content-Type")
             iterator = response.content.iter_any()
             first_chunk = await anext(iterator)
+            size = len(first_chunk)
             signature = first_chunk[:4]
             if (
                 resource_format == "xlsx"
@@ -131,6 +134,7 @@ class Retrieval:
             ):
                 xlsxbuffer = bytearray(first_chunk)
                 async for chunk in iterator:
+                    size += len(chunk)
                     xlsxbuffer.extend(chunk)
                 workbook = load_workbook(
                     filename=BytesIO(xlsxbuffer), read_only=True
@@ -145,6 +149,7 @@ class Retrieval:
             else:
                 md5hash = hashlib.md5(first_chunk)
                 async for chunk in iterator:
+                    size += len(chunk)
                     md5hash.update(chunk)
             hash = md5hash.hexdigest()
             if mimetype not in self.ignore_mimetypes:
@@ -153,7 +158,7 @@ class Retrieval:
                     if not any(x in mimetype for x in expected_mimetypes):
                         return (
                             resource_id,
-                            http_size,
+                            size,
                             http_last_modified,
                             hash,
                             -1,
@@ -163,15 +168,11 @@ class Retrieval:
                 if not any(
                     signature[: len(x)] == x for x in expected_signatures
                 ):
-                    return resource_id, http_size, http_last_modified, hash, -2
+                    return resource_id, size, http_last_modified, hash, -2
+            if size != http_size:
+                return resource_id, size, http_last_modified, hash, -3
 
-            return (
-                resource_id,
-                http_size,
-                http_last_modified,
-                hash,
-                0,
-            )
+            return resource_id, size, http_last_modified, hash, 0
 
     async def process(
         self,

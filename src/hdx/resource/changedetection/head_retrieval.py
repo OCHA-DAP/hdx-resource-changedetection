@@ -79,6 +79,8 @@ class HeadRetrieval:
             if status == 200:
                 headers = response.headers
                 http_size = headers.get("Content-Length")
+                if http_size:
+                    http_size = int(http_size)
                 http_last_modified = headers.get("Last-Modified")
                 etag = headers.get("Etag")
                 return resource_id, http_size, http_last_modified, etag, 200

@@ -34,7 +34,7 @@ class Results:
                 if status < 0:
                     if status < -90:
                         dict_of_lists_add(
-                            self._change_output, what_changed, resource_id
+                            self._change_output, status_str, resource_id
                         )
                         continue
             else:
@@ -56,7 +56,6 @@ class Results:
                     what_changed.append(status)
 
             if http_size:
-                http_size = int(http_size)
                 if http_size != resource[3]:
                     status = "size"
                     what_changed.append(status)

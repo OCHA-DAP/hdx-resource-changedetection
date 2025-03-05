@@ -61,7 +61,6 @@ class HeadResults:
                     what_changed.append(status)
 
             if http_size:
-                http_size = int(http_size)
                 if http_size != resource[3]:
                     status = "size"
                     what_changed.append(status)
