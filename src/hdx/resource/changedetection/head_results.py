@@ -31,7 +31,7 @@ class HeadResults:
             what_changed = []
             why_get = []
             resource = self._resources[resource_id]
-            http_size, http_last_modified, etag, status = result
+            size, last_modified, etag, status = result
             if status != HTTPStatus.OK:
                 status_str = status_lookup[status]
                 if status in (
@@ -60,8 +60,8 @@ class HeadResults:
                 if resource[5]:
                     what_changed.append(status)
 
-            if http_size:
-                if http_size != resource[3]:
+            if size:
+                if size != resource[3]:
                     status = "size"
                     what_changed.append(status)
                     if etag_unchanged:
@@ -71,16 +71,16 @@ class HeadResults:
                 if resource[3]:
                     what_changed.append("no size")
 
-            if http_last_modified:
-                http_last_modified = parse_date(http_last_modified)
+            if last_modified:
+                last_modified = parse_date(last_modified)
                 resource_date = resource[4]
-                if not resource_date or http_last_modified > resource_date:
+                if not resource_date or last_modified > resource_date:
                     status = "modified"
                     what_changed.append(status)
                     if etag_unchanged:
                         why_get.append(status)
                         get_resource = True
-                elif http_last_modified < resource_date:
+                elif last_modified < resource_date:
                     what_changed.append("modified: http<resource")
             else:
                 if resource[4]:
@@ -96,8 +96,8 @@ class HeadResults:
                 dict_of_lists_add(self._get_output, why_get, resource_id)
             if not etag_unchanged:
                 self._resources_to_update[resource_id] = (
-                    http_size,
-                    http_last_modified,
+                    size,
+                    last_modified,
                     etag,
                 )
 

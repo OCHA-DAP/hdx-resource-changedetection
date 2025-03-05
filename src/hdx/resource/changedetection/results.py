@@ -28,7 +28,7 @@ class Results:
         for resource_id, result in self._results.items():
             what_changed = []
             resource = self._resources[resource_id]
-            http_size, http_last_modified, etag, status = result
+            size, last_modified, etag, status = result
             if status != 0 and status != HTTPStatus.OK:
                 status_str = status_lookup[status]
                 if status < 0:
@@ -55,8 +55,8 @@ class Results:
                     status = f"no {etag_str}"
                     what_changed.append(status)
 
-            if http_size:
-                if http_size != resource[3]:
+            if size:
+                if size != resource[3]:
                     status = "size"
                     what_changed.append(status)
                     update = True
@@ -65,34 +65,34 @@ class Results:
                     what_changed.append("no size")
 
             resource_date = resource[4]
-            if http_last_modified:
-                http_last_modified = parse_date(http_last_modified)
-                if not resource_date or http_last_modified > resource_date:
+            if last_modified:
+                last_modified = parse_date(last_modified)
+                if not resource_date or last_modified > resource_date:
                     status = "modified"
                     what_changed.append(status)
                     update = True
-                elif http_last_modified < resource_date:
+                elif last_modified < resource_date:
                     what_changed.append("modified: http<resource")
             else:
                 if resource_date:
                     what_changed.append("no modified")
 
             if update:
-                if not http_last_modified or (
-                    resource_date and http_last_modified <= resource_date
+                if not last_modified or (
+                    resource_date and last_modified <= resource_date
                 ):
                     if resource_date:
                         if self._today > resource_date:
-                            http_last_modified = self._today
+                            last_modified = self._today
                             what_changed.append("today")
                         else:
-                            http_last_modified = resource_date
+                            last_modified = resource_date
                     else:
-                        http_last_modified = self._today
+                        last_modified = self._today
                         what_changed.append("today")
                 self._resources_to_update[resource_id] = (
-                    http_size,
-                    http_last_modified,
+                    size,
+                    last_modified,
                     etag,
                 )
 

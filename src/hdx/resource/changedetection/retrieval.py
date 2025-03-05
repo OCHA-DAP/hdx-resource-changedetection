@@ -114,12 +114,12 @@ class Retrieval:
             http_size = headers.get("Content-Length")
             if http_size:
                 http_size = int(http_size)
-            http_last_modified = headers.get("Last-Modified")
+            last_modified = headers.get("Last-Modified")
             etag = headers.get("Etag")
             if etag:
-                return resource_id, http_size, http_last_modified, etag, 200
+                return resource_id, http_size, last_modified, etag, 200
             if http_size and int(http_size) > 419430400:
-                return resource_id, http_size, http_last_modified, None, -99
+                return resource_id, http_size, last_modified, None, -99
 
             mimetype = headers.get("Content-Type")
             iterator = response.content.iter_any()
@@ -159,7 +159,7 @@ class Retrieval:
                         return (
                             resource_id,
                             size,
-                            http_last_modified,
+                            last_modified,
                             hash,
                             -1,
                         )
@@ -168,11 +168,11 @@ class Retrieval:
                 if not any(
                     signature[: len(x)] == x for x in expected_signatures
                 ):
-                    return resource_id, size, http_last_modified, hash, -2
+                    return resource_id, size, last_modified, hash, -2
             if size != http_size:
-                return resource_id, size, http_last_modified, hash, -3
+                return resource_id, size, last_modified, hash, -3
 
-            return resource_id, size, http_last_modified, hash, 0
+            return resource_id, size, last_modified, hash, 0
 
     async def process(
         self,
