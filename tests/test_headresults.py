@@ -25,110 +25,255 @@ class TestHeadResults:
         results_input = {"1a2b": result}
         head_results = HeadResults(results_input, resources)
         head_results.process()
-        change_output, get_output = head_results.output()
+        change_output, broken_output, get_output = head_results.output()
         check.equal(change_output, ["nothing: 1a2b"])
+        check.equal(broken_output, [])
         check.equal(get_output, [])
+        resources_to_update = head_results.get_resources_to_update()
+        check.equal(resources_to_update, {})
+        broken_resources = head_results.get_broken_resources()
+        check.equal(broken_resources, {})
+        resources_to_get = head_results.get_distributed_resources_to_get()
+        check.equal(resources_to_get, [])
 
         result[0] = 357103
         head_results = HeadResults(results_input, resources)
         head_results.process()
-        change_output, get_output = head_results.output()
+        change_output, broken_output, get_output = head_results.output()
         check.equal(change_output, ["size: 1a2b"])
+        check.equal(broken_output, [])
         check.equal(get_output, ["size: 1a2b"])
+        resources_to_update = head_results.get_resources_to_update()
+        check.equal(resources_to_update, {})
+        resources_to_get = head_results.get_distributed_resources_to_get()
+        check.equal(
+            resources_to_get,
+            [
+                (
+                    "https://test.com/myfile.xlsx",
+                    "a8b51b81-1fa7-499d-a9f2-3d0bce06b5b5",
+                    "xlsx",
+                    357102,
+                    datetime(2019, 11, 10, 8, 4, 26, tzinfo=timezone.utc),
+                    "1234",
+                )
+            ],
+        )
 
         result[0] = 357102
         result[1] = "Sun, 10 Nov 2019 08:04:27 GMT"
         head_results = HeadResults(results_input, resources)
         head_results.process()
-        change_output, get_output = head_results.output()
+        change_output, broken_output, get_output = head_results.output()
         check.equal(change_output, ["modified: 1a2b"])
+        check.equal(broken_output, [])
         check.equal(get_output, ["modified: 1a2b"])
 
         result[1] = "Sun, 10 Nov 2019 08:04:25 GMT"
         head_results = HeadResults(results_input, resources)
         head_results.process()
-        change_output, get_output = head_results.output()
-        check.equal(change_output, ["modified: http<resource: 1a2b"])
+        change_output, broken_output, get_output = head_results.output()
+        check.equal(change_output, ["modified http<resource: 1a2b"])
+        check.equal(broken_output, [])
         check.equal(get_output, [])
+        resources_to_update = head_results.get_resources_to_update()
+        check.equal(resources_to_update, {})
+        resources_to_get = head_results.get_distributed_resources_to_get()
+        check.equal(resources_to_get, [])
 
         result[1] = "Sun, 10 Nov 2019 08:04:26 GMT"
         result[2] = "1235"
         head_results = HeadResults(results_input, resources)
         head_results.process()
-        change_output, get_output = head_results.output()
+        change_output, broken_output, get_output = head_results.output()
         check.equal(change_output, ["etag: 1a2b"])
+        check.equal(broken_output, [])
         check.equal(get_output, [])
+        broken_resources = head_results.get_broken_resources()
+        check.equal(broken_resources, {})
+        resources_to_get = head_results.get_distributed_resources_to_get()
+        check.equal(resources_to_get, [])
 
         result[1] = "Sun, 10 Nov 2019 08:04:27 GMT"
         head_results = HeadResults(results_input, resources)
         head_results.process()
-        change_output, get_output = head_results.output()
+        change_output, broken_output, get_output = head_results.output()
         check.equal(change_output, ["etag|modified: 1a2b"])
+        check.equal(broken_output, [])
         check.equal(get_output, [])
 
         result[0] = 357103
         result[2] = "1234"
         head_results = HeadResults(results_input, resources)
         head_results.process()
-        change_output, get_output = head_results.output()
+        change_output, broken_output, get_output = head_results.output()
         check.equal(change_output, ["size|modified: 1a2b"])
+        check.equal(broken_output, [])
         check.equal(get_output, ["size|modified: 1a2b"])
 
         result[0] = None
         head_results = HeadResults(results_input, resources)
         head_results.process()
-        change_output, get_output = head_results.output()
+        change_output, broken_output, get_output = head_results.output()
         check.equal(change_output, ["no size|modified: 1a2b"])
+        check.equal(broken_output, [])
         check.equal(get_output, ["modified: 1a2b"])
 
         result[2] = None
         head_results = HeadResults(results_input, resources)
         head_results.process()
-        change_output, get_output = head_results.output()
+        change_output, broken_output, get_output = head_results.output()
         check.equal(change_output, ["no etag|no size|modified: 1a2b"])
+        check.equal(broken_output, [])
         check.equal(get_output, ["no etag|modified: 1a2b"])
 
         result[1] = None
         head_results = HeadResults(results_input, resources)
         head_results.process()
-        change_output, get_output = head_results.output()
+        change_output, broken_output, get_output = head_results.output()
         check.equal(change_output, ["no etag|no size|no modified: 1a2b"])
+        check.equal(broken_output, [])
         check.equal(get_output, ["no etag: 1a2b"])
+        resources_to_get = head_results.get_distributed_resources_to_get()
+        check.equal(
+            resources_to_get,
+            [
+                (
+                    "https://test.com/myfile.xlsx",
+                    "a8b51b81-1fa7-499d-a9f2-3d0bce06b5b5",
+                    "xlsx",
+                    357102,
+                    datetime(2019, 11, 10, 8, 4, 26, tzinfo=timezone.utc),
+                    "1234",
+                )
+            ],
+        )
 
         result[3] = 403
         head_results = HeadResults(results_input, resources)
         head_results.process()
-        change_output, get_output = head_results.output()
+        change_output, broken_output, get_output = head_results.output()
         check.equal(change_output, ["FORBIDDEN: 1a2b"])
+        check.equal(broken_output, [])
         check.equal(get_output, ["FORBIDDEN: 1a2b"])
+        broken_resources = head_results.get_broken_resources()
+        check.equal(broken_resources, {})
+        resources_to_get = head_results.get_distributed_resources_to_get()
+        check.equal(
+            resources_to_get,
+            [
+                (
+                    "https://test.com/myfile.xlsx",
+                    "a8b51b81-1fa7-499d-a9f2-3d0bce06b5b5",
+                    "xlsx",
+                    357102,
+                    datetime(2019, 11, 10, 8, 4, 26, tzinfo=timezone.utc),
+                    "1234",
+                )
+            ],
+        )
 
         result[3] = 429
         head_results = HeadResults(results_input, resources)
         head_results.process()
-        change_output, get_output = head_results.output()
+        change_output, broken_output, get_output = head_results.output()
         check.equal(change_output, ["TOO_MANY_REQUESTS: 1a2b"])
+        check.equal(broken_output, [])
         check.equal(get_output, ["TOO_MANY_REQUESTS: 1a2b"])
+        resources_to_update = head_results.get_resources_to_update()
+        check.equal(resources_to_update, {})
+        broken_resources = head_results.get_broken_resources()
+        check.equal(broken_resources, {})
+        resources_to_get = head_results.get_distributed_resources_to_get()
+        check.equal(
+            resources_to_get,
+            [
+                (
+                    "https://test.com/myfile.xlsx",
+                    "a8b51b81-1fa7-499d-a9f2-3d0bce06b5b5",
+                    "xlsx",
+                    357102,
+                    datetime(2019, 11, 10, 8, 4, 26, tzinfo=timezone.utc),
+                    "1234",
+                )
+            ],
+        )
 
         result[3] = 410
         head_results = HeadResults(results_input, resources)
         head_results.process()
-        change_output, get_output = head_results.output()
+        change_output, broken_output, get_output = head_results.output()
         check.equal(change_output, ["GONE: 1a2b"])
+        check.equal(broken_output, ["GONE: 1a2b"])
         check.equal(get_output, [])
+        resources_to_update = head_results.get_resources_to_update()
+        check.equal(resources_to_update, {})
+        broken_resources = head_results.get_broken_resources()
+        check.equal(
+            broken_resources,
+            {
+                "1a2b": (
+                    "https://test.com/myfile.xlsx",
+                    "a8b51b81-1fa7-499d-a9f2-3d0bce06b5b5",
+                    "xlsx",
+                    357102,
+                    datetime(2019, 11, 10, 8, 4, 26, tzinfo=timezone.utc),
+                    "1234",
+                )
+            },
+        )
+        resources_to_get = head_results.get_distributed_resources_to_get()
+        check.equal(resources_to_get, [])
 
         result[3] = 504
         head_results = HeadResults(results_input, resources)
         head_results.process()
-        change_output, get_output = head_results.output()
+        change_output, broken_output, get_output = head_results.output()
         check.equal(change_output, ["GATEWAY_TIMEOUT: 1a2b"])
+        check.equal(broken_output, ["GATEWAY_TIMEOUT: 1a2b"])
         check.equal(get_output, [])
+        resources_to_update = head_results.get_resources_to_update()
+        check.equal(resources_to_update, {})
+        broken_resources = head_results.get_broken_resources()
+        check.equal(
+            broken_resources,
+            {
+                "1a2b": (
+                    "https://test.com/myfile.xlsx",
+                    "a8b51b81-1fa7-499d-a9f2-3d0bce06b5b5",
+                    "xlsx",
+                    357102,
+                    datetime(2019, 11, 10, 8, 4, 26, tzinfo=timezone.utc),
+                    "1234",
+                )
+            },
+        )
 
-        result[3] = -100
+        result[3] = -101
         head_results = HeadResults(results_input, resources)
         head_results.process()
-        change_output, get_output = head_results.output()
+        change_output, broken_output, get_output = head_results.output()
         check.equal(change_output, ["UNSPECIFIED SERVER ERROR: 1a2b"])
+        check.equal(broken_output, ["UNSPECIFIED SERVER ERROR: 1a2b"])
         check.equal(get_output, [])
+        resources_to_update = head_results.get_resources_to_update()
+        check.equal(resources_to_update, {})
+        broken_resources = head_results.get_broken_resources()
+        check.equal(
+            broken_resources,
+            {
+                "1a2b": (
+                    "https://test.com/myfile.xlsx",
+                    "a8b51b81-1fa7-499d-a9f2-3d0bce06b5b5",
+                    "xlsx",
+                    357102,
+                    datetime(2019, 11, 10, 8, 4, 26, tzinfo=timezone.utc),
+                    "1234",
+                )
+            },
+        )
+        resources_to_get = head_results.get_distributed_resources_to_get()
+        check.equal(resources_to_get, [])
 
         resources = {
             "1a2b": resource,
@@ -149,8 +294,9 @@ class TestHeadResults:
         result[3] = 200
         head_results = HeadResults(results_input, resources)
         head_results.process()
-        change_output, get_output = head_results.output()
+        change_output, broken_output, get_output = head_results.output()
         check.equal(change_output, ["no etag|no size|no modified: 6"])
+        check.equal(broken_output, [])
         check.equal(get_output, ["no etag: 6"])
 
         resource2 = (
@@ -171,8 +317,9 @@ class TestHeadResults:
         }
         head_results = HeadResults(results_input, resources)
         head_results.process()
-        change_output, get_output = head_results.output()
+        change_output, broken_output, get_output = head_results.output()
         check.equal(change_output, ["no etag|no size|no modified: 6"])
+        check.equal(broken_output, [])
         check.equal(get_output, ["no etag: 6"])
         resources_to_get = head_results.get_distributed_resources_to_get()
         check.equal(len(resources_to_get), 6)
@@ -180,6 +327,10 @@ class TestHeadResults:
         check.equal(resources_to_get[1], resource2)
         netlocs = head_results.get_netlocs()
         check.equal(sorted(netlocs), ["test.com", "test2.com"])
+        resources_to_update = head_results.get_resources_to_update()
+        check.equal(resources_to_update, {})
+        broken_resources = head_results.get_broken_resources()
+        check.equal(broken_resources, {})
 
         resource2 = (
             "https://test2.com/myfile.xlsx",
@@ -199,8 +350,9 @@ class TestHeadResults:
         results_input = {"1a2b": result}
         head_results = HeadResults(results_input, resources)
         head_results.process()
-        change_output, get_output = head_results.output()
+        change_output, broken_output, get_output = head_results.output()
         check.equal(change_output, ["etag|size|modified: 1a2b"])
+        check.equal(broken_output, [])
         check.equal(get_output, [])
         resources_to_update = head_results.get_resources_to_update()
         check.equal(
@@ -213,3 +365,5 @@ class TestHeadResults:
                 )
             },
         )
+        broken_resources = head_results.get_broken_resources()
+        check.equal(broken_resources, {})

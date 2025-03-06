@@ -119,7 +119,7 @@ class Retrieval:
             if etag:
                 return resource_id, http_size, last_modified, etag, 200
             if http_size and int(http_size) > 419430400:
-                return resource_id, http_size, last_modified, None, -99
+                return resource_id, http_size, last_modified, None, -11
 
             mimetype = headers.get("Content-Type")
             iterator = response.content.iter_any()
@@ -205,7 +205,7 @@ class Retrieval:
                 return resource_id, None, None, None, ex.status
             except Exception as ex:
                 logger.error(ex)
-                return resource_id, None, None, None, -100
+                return resource_id, None, None, None, -101
 
     async def check_urls(
         self, resources_to_get: List[Tuple]

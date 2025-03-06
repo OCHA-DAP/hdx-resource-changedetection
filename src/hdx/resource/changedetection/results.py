@@ -22,7 +22,9 @@ class Results:
         self._results = results
         self._resources = resources
         self._resources_to_update = {}
+        self._broken_resources = {}
         self._change_output = {}
+        self._broken_output = {}
 
     def process(self) -> None:
         for resource_id, result in self._results.items():
@@ -32,11 +34,22 @@ class Results:
             if status != 0 and status != HTTPStatus.OK:
                 status_str = status_lookup[status]
                 if status < 0:
-                    if status < -90:
+                    if status < -10:
                         dict_of_lists_add(
                             self._change_output, status_str, resource_id
                         )
+                        if status < -100:
+                            self._broken_resources[resource_id] = resource
+                            dict_of_lists_add(
+                                self._broken_output, status_str, resource_id
+                            )
                         continue
+                else:
+                    if status != HTTPStatus.TOO_MANY_REQUESTS:
+                        self._broken_resources[resource_id] = resource
+                    dict_of_lists_add(
+                        self._broken_output, status_str, resource_id
+                    )
             else:
                 status_str = None
 
@@ -72,7 +85,7 @@ class Results:
                     what_changed.append(status)
                     update = True
                 elif last_modified < resource_date:
-                    what_changed.append("modified: http<resource")
+                    what_changed.append("modified http<resource")
             else:
                 if resource_date:
                     what_changed.append("no modified")
@@ -103,11 +116,21 @@ class Results:
                 what_changed = f"{status_str}  {what_changed}"
             dict_of_lists_add(self._change_output, what_changed, resource_id)
 
-    def output(self) -> List[str]:
+    def output(self) -> Tuple[List[str], List[str]]:
         if self._change_output:
             logger.info("\nChanges detected:")
-            return log_output(self._change_output)
-        return []
+            change_output = log_output(self._change_output)
+        else:
+            change_output = []
+        if self._broken_output:
+            logger.info("\nThese are broken:")
+            broken_output = log_output(self._broken_output)
+        else:
+            broken_output = []
+        return change_output, broken_output
 
     def get_resources_to_update(self) -> Dict[str, Tuple]:
         return self._resources_to_update
+
+    def get_broken_resources(self) -> Dict[str, Tuple]:
+        return self._broken_resources

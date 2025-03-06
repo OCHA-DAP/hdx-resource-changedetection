@@ -22,9 +22,11 @@ class HeadResults:
         self._resources = resources
         self._resources_to_get = {}
         self._resources_to_update = {}
+        self._broken_resources = {}
         self._change_output = {}
         self._netlocs = set()
         self._get_output = {}
+        self._broken_output = {}
 
     def process(self) -> None:
         for resource_id, result in self._results.items():
@@ -42,6 +44,11 @@ class HeadResults:
                     self._resources_to_get[resource_id] = resource
                     dict_of_lists_add(
                         self._get_output, status_str, resource_id
+                    )
+                else:
+                    self._broken_resources[resource_id] = resource
+                    dict_of_lists_add(
+                        self._broken_output, status_str, resource_id
                     )
                 dict_of_lists_add(self._change_output, status_str, resource_id)
                 continue
@@ -81,7 +88,7 @@ class HeadResults:
                         why_get.append(status)
                         get_resource = True
                 elif last_modified < resource_date:
-                    what_changed.append("modified: http<resource")
+                    what_changed.append("modified http<resource")
             else:
                 if resource[4]:
                     what_changed.append("no modified")
@@ -101,18 +108,23 @@ class HeadResults:
                     etag,
                 )
 
-    def output(self) -> Tuple[List[str], List[str]]:
+    def output(self) -> Tuple[List[str], List[str], List[str]]:
         if self._change_output:
             logger.info("\nChanges detected:")
             change_output = log_output(self._change_output)
         else:
             change_output = []
+        if self._broken_output:
+            logger.info("\nThese are broken:")
+            broken_output = log_output(self._broken_output)
+        else:
+            broken_output = []
         if self._get_output:
             logger.info("\nWill get these:")
             get_output = log_output(self._get_output)
         else:
             get_output = []
-        return change_output, get_output
+        return change_output, broken_output, get_output
 
     def get_distributed_resources_to_get(self) -> List[Tuple]:
         def get_netloc(x):
@@ -129,3 +141,6 @@ class HeadResults:
 
     def get_resources_to_update(self) -> Dict[str, Tuple]:
         return self._resources_to_update
+
+    def get_broken_resources(self) -> Dict[str, Tuple]:
+        return self._broken_resources

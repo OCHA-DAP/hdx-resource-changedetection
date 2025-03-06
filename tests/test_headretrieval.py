@@ -24,7 +24,7 @@ class TestHeadRetrieve:
             ),
         )
         check.equal(result["2"], (None, None, None, 404))
-        check.equal(result["3"], (None, None, None, -100))
+        check.equal(result["3"], (None, None, None, -101))
         check.equal(
             result["4"],
             (
@@ -82,11 +82,11 @@ class TestHeadRetrieve:
         )
         check.equal(
             result["14"],
-            (None, None, None, -100),
+            (None, None, None, -101),
         )
         check.equal(
             result["15"],
-            (None, None, None, -100),
+            (None, None, None, -101),
         )
         check.equal(
             result["16"],

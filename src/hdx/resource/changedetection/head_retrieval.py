@@ -122,7 +122,7 @@ class HeadRetrieval:
                 return resource_id, None, None, None, ex.status
             except Exception as ex:
                 logger.error(ex)
-                return resource_id, None, None, None, -100
+                return resource_id, None, None, None, -101
 
     async def check_urls(
         self, resources_to_check: List[Tuple]
