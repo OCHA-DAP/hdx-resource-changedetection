@@ -300,7 +300,7 @@ urllib3==2.3.0
     #   requests
 validators==0.34.0
     # via frictionless
-virtualenv==20.29.2
+virtualenv==20.29.3
     # via pre-commit
 wheel==0.45.1
     # via libhxl

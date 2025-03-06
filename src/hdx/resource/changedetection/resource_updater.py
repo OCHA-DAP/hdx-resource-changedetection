@@ -9,12 +9,13 @@ logger = logging.getLogger(__name__)
 class ResourceUpdater:
     def __init__(self, configuration: Configuration):
         self.configuration = configuration
-        self._count = 0
+        self._updated = 0
+        self._broken = 0
 
     def update_resource(
         self, resource_id: str, size: int, last_modified: datetime, hash: str
     ) -> None:
-        self._count += 1
+        self._updated += 1
         # resource = Resource.read_from_hdx(resource_id, configuration=self.configuration)
         # if size:
         #     resource["size"] = size
@@ -29,6 +30,12 @@ class ResourceUpdater:
         #     ignore_check=True,
         # )
 
+    def mark_resource_broken(self, resource_id: str) -> None:
+        self._broken += 1
+        # resource = Resource.read_from_hdx(resource_id, configuration=self.configuration)
+        # resource.mark_broken()
+
     def output(self) -> None:
         logger.info("\n")
-        logger.info(f"Patching {self._count} resources")
+        logger.info(f"Patched {self._updated} resources")
+        logger.info(f"Marked {self._broken} resources broken")

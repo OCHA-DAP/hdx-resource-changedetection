@@ -128,7 +128,10 @@ class Retrieval:
             signature = first_chunk[:4]
             if (
                 resource_format == "xlsx"
-                and mimetype == self.mimetypes["xlsx"][0]
+                and (
+                    mimetype == self.mimetypes["xlsx"][0]
+                    or mimetype in self.ignore_mimetypes
+                )
                 and signature == self.signatures["xlsx"][0]
                 and (self._url_ignore not in url if self._url_ignore else True)
             ):

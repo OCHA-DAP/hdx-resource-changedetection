@@ -87,6 +87,9 @@ def main(
 
         resources_to_update = head_results.get_resources_to_update()
         resources_to_update.update(results.get_resources_to_update())
+        broken_resources = head_results.get_broken_resources()
+        broken_resources.update(results.get_broken_resources())
+
         resource_updater = ResourceUpdater(configuration)
 
         # async this?
@@ -97,6 +100,8 @@ def main(
                 resource_info[1],
                 resource_info[2],
             )
+        for resource_id, resource_info in broken_resources.items():
+            resource_updater.mark_resource_broken(resource_id)
         resource_updater.output()
 
     logger.info(f"{updated_by_script} completed!")
