@@ -39,7 +39,7 @@ class custom_wait(wait_base):
         self.max = _utils.to_seconds(max)
         self.exp_base = exp_base
         self.min_multiplier = min_multiplier
-        self.multiply_statuses = multiply_codes
+        self.multiply_codes = multiply_codes
 
     def __call__(self, retry_state: "RetryCallState") -> float:
         try:
@@ -52,7 +52,7 @@ class custom_wait(wait_base):
         # Multiply min wait for certain HTTP error codes
         if (
             isinstance(ex, ClientResponseError)
-            and ex.status in self.multiply_statuses
+            and ex.status in self.multiply_codes
         ):
             minimum *= self.min_multiplier
         return max(max(0, minimum), min(result, self.max))
