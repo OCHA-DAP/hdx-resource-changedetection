@@ -12,6 +12,7 @@ class TestResults:
             "https://test.com/myfile.xlsx",
             "a8b51b81-1fa7-499d-a9f2-3d0bce06b5b5",
             "xlsx",
+            "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5",
             357102,
             datetime(2019, 11, 10, 8, 4, 26, tzinfo=timezone.utc),
             "1234",
@@ -29,10 +30,8 @@ class TestResults:
         change_output, broken_output = results.output()
         check.equal(change_output, ["nothing: 1a2b"])
         check.equal(broken_output, [])
-        resources_to_update = results.get_resources_to_update()
-        check.equal(resources_to_update, {})
-        broken_resources = results.get_broken_resources()
-        check.equal(broken_resources, {})
+        datasets_to_revise = results.get_datasets_to_revise()
+        check.equal(datasets_to_revise, {})
 
         # Although the size has changed the http modified is the same as
         # the resource last_modified so we populate it with today instead
@@ -42,19 +41,19 @@ class TestResults:
         change_output, broken_output = results.output()
         check.equal(change_output, ["size|today: 1a2b"])
         check.equal(broken_output, [])
-        resources_to_update = results.get_resources_to_update()
+        datasets_to_revise = results.get_datasets_to_revise()
         check.equal(
-            resources_to_update,
+            datasets_to_revise,
             {
-                "1a2b": (
-                    357103,
-                    datetime(2019, 11, 10, 8, 4, 27, tzinfo=timezone.utc),
-                    "1234",
-                )
+                "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5": {
+                    "match": {"id": "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5"},
+                    "update__resources__1a2b": {
+                        "size": 357103,
+                        "last_modified": "2019-11-10T08:04:27",
+                    },
+                }
             },
         )
-        broken_resources = results.get_broken_resources()
-        check.equal(broken_resources, {})
 
         # today < resource date so don't change resource date
         today = datetime(2019, 11, 9, 8, 4, 27, tzinfo=timezone.utc)
@@ -79,10 +78,8 @@ class TestResults:
         change_output, broken_output = results.output()
         check.equal(change_output, ["modified http<resource: 1a2b"])
         check.equal(broken_output, [])
-        resources_to_update = results.get_resources_to_update()
-        check.equal(resources_to_update, {})
-        broken_resources = results.get_broken_resources()
-        check.equal(broken_resources, {})
+        datasets_to_revise = results.get_datasets_to_revise()
+        check.equal(datasets_to_revise, {})
 
         # Although the etag has changed the http modified is the same as
         # the resource last_modified so we populate it with today instead
@@ -93,19 +90,19 @@ class TestResults:
         change_output, broken_output = results.output()
         check.equal(change_output, ["etag|today: 1a2b"])
         check.equal(broken_output, [])
-        resources_to_update = results.get_resources_to_update()
+        datasets_to_revise = results.get_datasets_to_revise()
         check.equal(
-            resources_to_update,
+            datasets_to_revise,
             {
-                "1a2b": (
-                    357102,
-                    datetime(2019, 11, 10, 8, 4, 27, tzinfo=timezone.utc),
-                    "1235",
-                )
+                "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5": {
+                    "match": {"id": "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5"},
+                    "update__resources__1a2b": {
+                        "hash": "1235",
+                        "last_modified": "2019-11-10T08:04:27",
+                    },
+                }
             },
         )
-        broken_resources = results.get_broken_resources()
-        check.equal(broken_resources, {})
 
         result[1] = "Sun, 10 Nov 2019 08:04:28 GMT"
         results = Results(today, results_input, resources)
@@ -142,10 +139,8 @@ class TestResults:
         change_output, broken_output = results.output()
         check.equal(change_output, ["no etag|no size|no modified: 1a2b"])
         check.equal(broken_output, [])
-        resources_to_update = results.get_resources_to_update()
-        check.equal(resources_to_update, {})
-        broken_resources = results.get_broken_resources()
-        check.equal(broken_resources, {})
+        datasets_to_revise = results.get_datasets_to_revise()
+        check.equal(datasets_to_revise, {})
 
         result[3] = 0
         results = Results(today, results_input, resources)
@@ -153,10 +148,8 @@ class TestResults:
         change_output, broken_output = results.output()
         check.equal(change_output, ["no hash|no size|no modified: 1a2b"])
         check.equal(broken_output, [])
-        resources_to_update = results.get_resources_to_update()
-        check.equal(resources_to_update, {})
-        broken_resources = results.get_broken_resources()
-        check.equal(broken_resources, {})
+        datasets_to_revise = results.get_datasets_to_revise()
+        check.equal(datasets_to_revise, {})
 
         result[2] = "1234"
         results = Results(today, results_input, resources)
@@ -173,19 +166,19 @@ class TestResults:
         change_output, broken_output = results.output()
         check.equal(change_output, ["hash|no size|no modified|today: 1a2b"])
         check.equal(broken_output, [])
-        resources_to_update = results.get_resources_to_update()
+        datasets_to_revise = results.get_datasets_to_revise()
         check.equal(
-            resources_to_update,
+            datasets_to_revise,
             {
-                "1a2b": (
-                    None,
-                    datetime(2019, 11, 10, 8, 4, 27, tzinfo=timezone.utc),
-                    "1235",
-                )
+                "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5": {
+                    "match": {"id": "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5"},
+                    "update__resources__1a2b": {
+                        "hash": "1235",
+                        "last_modified": "2019-11-10T08:04:27",
+                    },
+                }
             },
         )
-        broken_resources = results.get_broken_resources()
-        check.equal(broken_resources, {})
 
         result[2] = None
         result[3] = 403
@@ -196,20 +189,14 @@ class TestResults:
             change_output, ["FORBIDDEN  no hash|no size|no modified: 1a2b"]
         )
         check.equal(broken_output, ["FORBIDDEN: 1a2b"])
-        resources_to_update = results.get_resources_to_update()
-        check.equal(resources_to_update, {})
-        broken_resources = results.get_broken_resources()
+        datasets_to_revise = results.get_datasets_to_revise()
         check.equal(
-            broken_resources,
+            datasets_to_revise,
             {
-                "1a2b": (
-                    "https://test.com/myfile.xlsx",
-                    "a8b51b81-1fa7-499d-a9f2-3d0bce06b5b5",
-                    "xlsx",
-                    357102,
-                    datetime(2019, 11, 10, 8, 4, 26, tzinfo=timezone.utc),
-                    "1234",
-                )
+                "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5": {
+                    "match": {"id": "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5"},
+                    "update__resources__1a2b": {"broken_link": True},
+                }
             },
         )
 
@@ -222,10 +209,8 @@ class TestResults:
             ["TOO_MANY_REQUESTS  no hash|no size|no modified: 1a2b"],
         )
         check.equal(broken_output, ["TOO_MANY_REQUESTS: 1a2b"])
-        resources_to_update = results.get_resources_to_update()
-        check.equal(resources_to_update, {})
-        broken_resources = results.get_broken_resources()
-        check.equal(broken_resources, {})
+        datasets_to_revise = results.get_datasets_to_revise()
+        check.equal(datasets_to_revise, {})
 
         result[3] = 410
         results = Results(today, results_input, resources)
@@ -233,20 +218,14 @@ class TestResults:
         change_output, broken_output = results.output()
         check.equal(change_output, ["GONE  no hash|no size|no modified: 1a2b"])
         check.equal(broken_output, ["GONE: 1a2b"])
-        resources_to_update = results.get_resources_to_update()
-        check.equal(resources_to_update, {})
-        broken_resources = results.get_broken_resources()
+        datasets_to_revise = results.get_datasets_to_revise()
         check.equal(
-            broken_resources,
+            datasets_to_revise,
             {
-                "1a2b": (
-                    "https://test.com/myfile.xlsx",
-                    "a8b51b81-1fa7-499d-a9f2-3d0bce06b5b5",
-                    "xlsx",
-                    357102,
-                    datetime(2019, 11, 10, 8, 4, 26, tzinfo=timezone.utc),
-                    "1234",
-                )
+                "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5": {
+                    "match": {"id": "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5"},
+                    "update__resources__1a2b": {"broken_link": True},
+                }
             },
         )
 
@@ -259,20 +238,14 @@ class TestResults:
             ["GATEWAY_TIMEOUT  no hash|no size|no modified: 1a2b"],
         )
         check.equal(broken_output, ["GATEWAY_TIMEOUT: 1a2b"])
-        resources_to_update = results.get_resources_to_update()
-        check.equal(resources_to_update, {})
-        broken_resources = results.get_broken_resources()
+        datasets_to_revise = results.get_datasets_to_revise()
         check.equal(
-            broken_resources,
+            datasets_to_revise,
             {
-                "1a2b": (
-                    "https://test.com/myfile.xlsx",
-                    "a8b51b81-1fa7-499d-a9f2-3d0bce06b5b5",
-                    "xlsx",
-                    357102,
-                    datetime(2019, 11, 10, 8, 4, 26, tzinfo=timezone.utc),
-                    "1234",
-                )
+                "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5": {
+                    "match": {"id": "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5"},
+                    "update__resources__1a2b": {"broken_link": True},
+                }
             },
         )
 
@@ -280,6 +253,7 @@ class TestResults:
             "https://test.com/myfile.xlsx",
             "a8b51b81-1fa7-499d-a9f2-3d0bce06b5b5",
             "xlsx",
+            "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5",
             357102,
             None,
             "1234",
@@ -300,19 +274,19 @@ class TestResults:
         change_output, broken_output = results.output()
         check.equal(change_output, ["etag|today: 1a2b"])
         check.equal(broken_output, [])
-        resources_to_update = results.get_resources_to_update()
+        datasets_to_revise = results.get_datasets_to_revise()
         check.equal(
-            resources_to_update,
+            datasets_to_revise,
             {
-                "1a2b": (
-                    357102,
-                    datetime(2019, 11, 10, 8, 4, 27, tzinfo=timezone.utc),
-                    "1235",
-                )
+                "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5": {
+                    "match": {"id": "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5"},
+                    "update__resources__1a2b": {
+                        "hash": "1235",
+                        "last_modified": "2019-11-10T08:04:27",
+                    },
+                }
             },
         )
-        broken_resources = results.get_broken_resources()
-        check.equal(broken_resources, {})
 
         # No resource modified and http modified is set so use it since etag
         # has changed. Don't use today as we have a new http modified value.
@@ -322,19 +296,19 @@ class TestResults:
         change_output, broken_output = results.output()
         check.equal(change_output, ["etag|modified: 1a2b"])
         check.equal(broken_output, [])
-        resources_to_update = results.get_resources_to_update()
+        datasets_to_revise = results.get_datasets_to_revise()
         check.equal(
-            resources_to_update,
+            datasets_to_revise,
             {
-                "1a2b": (
-                    357102,
-                    datetime(2019, 11, 10, 8, 4, 26, tzinfo=timezone.utc),
-                    "1235",
-                )
+                "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5": {
+                    "match": {"id": "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5"},
+                    "update__resources__1a2b": {
+                        "hash": "1235",
+                        "last_modified": "2019-11-10T08:04:26",
+                    },
+                }
             },
         )
-        broken_resources = results.get_broken_resources()
-        check.equal(broken_resources, {})
 
         result[2] = "1234"
         results = Results(today, results_input, resources)
@@ -342,19 +316,18 @@ class TestResults:
         change_output, broken_output = results.output()
         check.equal(change_output, ["modified: 1a2b"])
         check.equal(broken_output, [])
-        resources_to_update = results.get_resources_to_update()
+        datasets_to_revise = results.get_datasets_to_revise()
         check.equal(
-            resources_to_update,
+            datasets_to_revise,
             {
-                "1a2b": (
-                    357102,
-                    datetime(2019, 11, 10, 8, 4, 26, tzinfo=timezone.utc),
-                    "1234",
-                )
+                "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5": {
+                    "match": {"id": "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5"},
+                    "update__resources__1a2b": {
+                        "last_modified": "2019-11-10T08:04:26"
+                    },
+                }
             },
         )
-        broken_resources = results.get_broken_resources()
-        check.equal(broken_resources, {})
 
         result[3] = -101
         results = Results(today, results_input, resources)
@@ -362,20 +335,14 @@ class TestResults:
         change_output, broken_output = results.output()
         check.equal(change_output, ["UNSPECIFIED SERVER ERROR: 1a2b"])
         check.equal(broken_output, ["UNSPECIFIED SERVER ERROR: 1a2b"])
-        resources_to_update = results.get_resources_to_update()
-        check.equal(resources_to_update, {})
-        broken_resources = results.get_broken_resources()
+        datasets_to_revise = results.get_datasets_to_revise()
         check.equal(
-            broken_resources,
+            datasets_to_revise,
             {
-                "1a2b": (
-                    "https://test.com/myfile.xlsx",
-                    "a8b51b81-1fa7-499d-a9f2-3d0bce06b5b5",
-                    "xlsx",
-                    357102,
-                    None,
-                    "1234",
-                )
+                "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5": {
+                    "match": {"id": "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5"},
+                    "update__resources__1a2b": {"broken_link": True},
+                }
             },
         )
 
@@ -385,10 +352,8 @@ class TestResults:
         change_output, broken_output = results.output()
         check.equal(change_output, ["TOO LARGE TO HASH: 1a2b"])
         check.equal(broken_output, [])
-        resources_to_update = results.get_resources_to_update()
-        check.equal(resources_to_update, {})
-        broken_resources = results.get_broken_resources()
-        check.equal(broken_resources, {})
+        datasets_to_revise = results.get_datasets_to_revise()
+        check.equal(datasets_to_revise, {})
 
         result[3] = -1
         results = Results(today, results_input, resources)
@@ -396,19 +361,18 @@ class TestResults:
         change_output, broken_output = results.output()
         check.equal(change_output, ["MIMETYPE != HDX FORMAT  modified: 1a2b"])
         check.equal(broken_output, [])
-        resources_to_update = results.get_resources_to_update()
+        datasets_to_revise = results.get_datasets_to_revise()
         check.equal(
-            resources_to_update,
+            datasets_to_revise,
             {
-                "1a2b": (
-                    357102,
-                    datetime(2019, 11, 10, 8, 4, 26, tzinfo=timezone.utc),
-                    "1234",
-                )
+                "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5": {
+                    "match": {"id": "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5"},
+                    "update__resources__1a2b": {
+                        "last_modified": "2019-11-10T08:04:26"
+                    },
+                }
             },
         )
-        broken_resources = results.get_broken_resources()
-        check.equal(broken_resources, {})
 
         result[2] = "1235"
         result[3] = -2
@@ -419,19 +383,19 @@ class TestResults:
             change_output, ["SIGNATURE != HDX FORMAT  hash|modified: 1a2b"]
         )
         check.equal(broken_output, [])
-        resources_to_update = results.get_resources_to_update()
+        datasets_to_revise = results.get_datasets_to_revise()
         check.equal(
-            resources_to_update,
+            datasets_to_revise,
             {
-                "1a2b": (
-                    357102,
-                    datetime(2019, 11, 10, 8, 4, 26, tzinfo=timezone.utc),
-                    "1235",
-                )
+                "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5": {
+                    "match": {"id": "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5"},
+                    "update__resources__1a2b": {
+                        "hash": "1235",
+                        "last_modified": "2019-11-10T08:04:26",
+                    },
+                }
             },
         )
-        broken_resources = results.get_broken_resources()
-        check.equal(broken_resources, {})
 
         result[0] = 357103
         result[3] = -3
@@ -442,19 +406,20 @@ class TestResults:
             change_output, ["SIZE != HTTP SIZE  hash|size|modified: 1a2b"]
         )
         check.equal(broken_output, [])
-        resources_to_update = results.get_resources_to_update()
+        datasets_to_revise = results.get_datasets_to_revise()
         check.equal(
-            resources_to_update,
+            datasets_to_revise,
             {
-                "1a2b": (
-                    357103,
-                    datetime(2019, 11, 10, 8, 4, 26, tzinfo=timezone.utc),
-                    "1235",
-                )
+                "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5": {
+                    "match": {"id": "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5"},
+                    "update__resources__1a2b": {
+                        "hash": "1235",
+                        "size": 357103,
+                        "last_modified": "2019-11-10T08:04:26",
+                    },
+                }
             },
         )
-        broken_resources = results.get_broken_resources()
-        check.equal(broken_resources, {})
 
         resources = {
             "1a2b": resource,
@@ -481,49 +446,51 @@ class TestResults:
             ["SIGNATURE != HDX FORMAT  hash|size|modified: 6"],
         )
         check.equal(broken_output, [])
-        resources_to_update = results.get_resources_to_update()
+        datasets_to_revise = results.get_datasets_to_revise()
         check.equal(
-            resources_to_update,
+            datasets_to_revise,
             {
-                "1a2b": (
-                    357103,
-                    datetime(2019, 11, 10, 8, 4, 26, tzinfo=timezone.utc),
-                    "1235",
-                ),
-                "1a3b": (
-                    357103,
-                    datetime(2019, 11, 10, 8, 4, 26, tzinfo=timezone.utc),
-                    "1235",
-                ),
-                "1a4b": (
-                    357103,
-                    datetime(2019, 11, 10, 8, 4, 26, tzinfo=timezone.utc),
-                    "1235",
-                ),
-                "1a5b": (
-                    357103,
-                    datetime(2019, 11, 10, 8, 4, 26, tzinfo=timezone.utc),
-                    "1235",
-                ),
-                "1a6b": (
-                    357103,
-                    datetime(2019, 11, 10, 8, 4, 26, tzinfo=timezone.utc),
-                    "1235",
-                ),
-                "1a7b": (
-                    357103,
-                    datetime(2019, 11, 10, 8, 4, 26, tzinfo=timezone.utc),
-                    "1235",
-                ),
+                "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5": {
+                    "match": {"id": "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5"},
+                    "update__resources__1a2b": {
+                        "hash": "1235",
+                        "size": 357103,
+                        "last_modified": "2019-11-10T08:04:26",
+                    },
+                    "update__resources__1a3b": {
+                        "hash": "1235",
+                        "size": 357103,
+                        "last_modified": "2019-11-10T08:04:26",
+                    },
+                    "update__resources__1a4b": {
+                        "hash": "1235",
+                        "size": 357103,
+                        "last_modified": "2019-11-10T08:04:26",
+                    },
+                    "update__resources__1a5b": {
+                        "hash": "1235",
+                        "size": 357103,
+                        "last_modified": "2019-11-10T08:04:26",
+                    },
+                    "update__resources__1a6b": {
+                        "hash": "1235",
+                        "size": 357103,
+                        "last_modified": "2019-11-10T08:04:26",
+                    },
+                    "update__resources__1a7b": {
+                        "hash": "1235",
+                        "size": 357103,
+                        "last_modified": "2019-11-10T08:04:26",
+                    },
+                }
             },
         )
-        broken_resources = results.get_broken_resources()
-        check.equal(broken_resources, {})
 
         resource2 = (
             "https://test2.com/myfile.xlsx",
             "a8b51b81-1fa7-499d-a9f2-3d0bce06b5b6",
             "xlsx",
+            "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e6",
             357103,
             datetime(2019, 11, 10, 8, 4, 27, tzinfo=timezone.utc),
             "1235",
@@ -547,26 +514,27 @@ class TestResults:
             ],
         )
         check.equal(broken_output, [])
-        resources_to_update = results.get_resources_to_update()
+        datasets_to_revise = results.get_datasets_to_revise()
         check.equal(
-            resources_to_update,
+            datasets_to_revise,
             {
-                "1a2b": (
-                    357103,
-                    datetime(2019, 11, 10, 8, 4, 26, tzinfo=timezone.utc),
-                    "1235",
-                ),
-                "1a3b": (
-                    357103,
-                    datetime(2019, 11, 10, 8, 4, 26, tzinfo=timezone.utc),
-                    "1235",
-                ),
-                "1a4b": (
-                    357103,
-                    datetime(2019, 11, 10, 8, 4, 26, tzinfo=timezone.utc),
-                    "1235",
-                ),
+                "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5": {
+                    "match": {"id": "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5"},
+                    "update__resources__1a2b": {
+                        "hash": "1235",
+                        "size": 357103,
+                        "last_modified": "2019-11-10T08:04:26",
+                    },
+                    "update__resources__1a3b": {
+                        "hash": "1235",
+                        "size": 357103,
+                        "last_modified": "2019-11-10T08:04:26",
+                    },
+                    "update__resources__1a4b": {
+                        "hash": "1235",
+                        "size": 357103,
+                        "last_modified": "2019-11-10T08:04:26",
+                    },
+                }
             },
         )
-        broken_resources = results.get_broken_resources()
-        check.equal(broken_resources, {})

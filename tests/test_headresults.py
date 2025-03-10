@@ -11,6 +11,7 @@ class TestHeadResults:
             "https://test.com/myfile.xlsx",
             "a8b51b81-1fa7-499d-a9f2-3d0bce06b5b5",
             "xlsx",
+            "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5",
             357102,
             datetime(2019, 11, 10, 8, 4, 26, tzinfo=timezone.utc),
             "1234",
@@ -29,10 +30,8 @@ class TestHeadResults:
         check.equal(change_output, ["nothing: 1a2b"])
         check.equal(broken_output, [])
         check.equal(get_output, [])
-        resources_to_update = head_results.get_resources_to_update()
-        check.equal(resources_to_update, {})
-        broken_resources = head_results.get_broken_resources()
-        check.equal(broken_resources, {})
+        datasets_to_revise = head_results.get_datasets_to_revise()
+        check.equal(datasets_to_revise, {})
         resources_to_get = head_results.get_distributed_resources_to_get()
         check.equal(resources_to_get, [])
 
@@ -43,8 +42,8 @@ class TestHeadResults:
         check.equal(change_output, ["size: 1a2b"])
         check.equal(broken_output, [])
         check.equal(get_output, ["size: 1a2b"])
-        resources_to_update = head_results.get_resources_to_update()
-        check.equal(resources_to_update, {})
+        datasets_to_revise = head_results.get_datasets_to_revise()
+        check.equal(datasets_to_revise, {})
         resources_to_get = head_results.get_distributed_resources_to_get()
         check.equal(
             resources_to_get,
@@ -53,6 +52,7 @@ class TestHeadResults:
                     "https://test.com/myfile.xlsx",
                     "a8b51b81-1fa7-499d-a9f2-3d0bce06b5b5",
                     "xlsx",
+                    "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5",
                     357102,
                     datetime(2019, 11, 10, 8, 4, 26, tzinfo=timezone.utc),
                     "1234",
@@ -76,8 +76,8 @@ class TestHeadResults:
         check.equal(change_output, ["modified http<resource: 1a2b"])
         check.equal(broken_output, [])
         check.equal(get_output, [])
-        resources_to_update = head_results.get_resources_to_update()
-        check.equal(resources_to_update, {})
+        datasets_to_revise = head_results.get_datasets_to_revise()
+        check.equal(datasets_to_revise, {})
         resources_to_get = head_results.get_distributed_resources_to_get()
         check.equal(resources_to_get, [])
 
@@ -89,8 +89,16 @@ class TestHeadResults:
         check.equal(change_output, ["etag: 1a2b"])
         check.equal(broken_output, [])
         check.equal(get_output, [])
-        broken_resources = head_results.get_broken_resources()
-        check.equal(broken_resources, {})
+        datasets_to_revise = head_results.get_datasets_to_revise()
+        check.equal(
+            datasets_to_revise,
+            {
+                "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5": {
+                    "match": {"id": "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5"},
+                    "update__resources__1a2b": {"hash": "1235"},
+                }
+            },
+        )
         resources_to_get = head_results.get_distributed_resources_to_get()
         check.equal(resources_to_get, [])
 
@@ -142,6 +150,7 @@ class TestHeadResults:
                     "https://test.com/myfile.xlsx",
                     "a8b51b81-1fa7-499d-a9f2-3d0bce06b5b5",
                     "xlsx",
+                    "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5",
                     357102,
                     datetime(2019, 11, 10, 8, 4, 26, tzinfo=timezone.utc),
                     "1234",
@@ -156,8 +165,8 @@ class TestHeadResults:
         check.equal(change_output, ["FORBIDDEN: 1a2b"])
         check.equal(broken_output, [])
         check.equal(get_output, ["FORBIDDEN: 1a2b"])
-        broken_resources = head_results.get_broken_resources()
-        check.equal(broken_resources, {})
+        datasets_to_revise = head_results.get_datasets_to_revise()
+        check.equal(datasets_to_revise, {})
         resources_to_get = head_results.get_distributed_resources_to_get()
         check.equal(
             resources_to_get,
@@ -166,6 +175,7 @@ class TestHeadResults:
                     "https://test.com/myfile.xlsx",
                     "a8b51b81-1fa7-499d-a9f2-3d0bce06b5b5",
                     "xlsx",
+                    "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5",
                     357102,
                     datetime(2019, 11, 10, 8, 4, 26, tzinfo=timezone.utc),
                     "1234",
@@ -180,10 +190,8 @@ class TestHeadResults:
         check.equal(change_output, ["TOO_MANY_REQUESTS: 1a2b"])
         check.equal(broken_output, [])
         check.equal(get_output, ["TOO_MANY_REQUESTS: 1a2b"])
-        resources_to_update = head_results.get_resources_to_update()
-        check.equal(resources_to_update, {})
-        broken_resources = head_results.get_broken_resources()
-        check.equal(broken_resources, {})
+        datasets_to_revise = head_results.get_datasets_to_revise()
+        check.equal(datasets_to_revise, {})
         resources_to_get = head_results.get_distributed_resources_to_get()
         check.equal(
             resources_to_get,
@@ -192,6 +200,7 @@ class TestHeadResults:
                     "https://test.com/myfile.xlsx",
                     "a8b51b81-1fa7-499d-a9f2-3d0bce06b5b5",
                     "xlsx",
+                    "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5",
                     357102,
                     datetime(2019, 11, 10, 8, 4, 26, tzinfo=timezone.utc),
                     "1234",
@@ -206,20 +215,14 @@ class TestHeadResults:
         check.equal(change_output, ["GONE: 1a2b"])
         check.equal(broken_output, ["GONE: 1a2b"])
         check.equal(get_output, [])
-        resources_to_update = head_results.get_resources_to_update()
-        check.equal(resources_to_update, {})
-        broken_resources = head_results.get_broken_resources()
+        datasets_to_revise = head_results.get_datasets_to_revise()
         check.equal(
-            broken_resources,
+            datasets_to_revise,
             {
-                "1a2b": (
-                    "https://test.com/myfile.xlsx",
-                    "a8b51b81-1fa7-499d-a9f2-3d0bce06b5b5",
-                    "xlsx",
-                    357102,
-                    datetime(2019, 11, 10, 8, 4, 26, tzinfo=timezone.utc),
-                    "1234",
-                )
+                "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5": {
+                    "match": {"id": "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5"},
+                    "update__resources__1a2b": {"broken_link": True},
+                }
             },
         )
         resources_to_get = head_results.get_distributed_resources_to_get()
@@ -232,20 +235,14 @@ class TestHeadResults:
         check.equal(change_output, ["GATEWAY_TIMEOUT: 1a2b"])
         check.equal(broken_output, ["GATEWAY_TIMEOUT: 1a2b"])
         check.equal(get_output, [])
-        resources_to_update = head_results.get_resources_to_update()
-        check.equal(resources_to_update, {})
-        broken_resources = head_results.get_broken_resources()
+        datasets_to_revise = head_results.get_datasets_to_revise()
         check.equal(
-            broken_resources,
+            datasets_to_revise,
             {
-                "1a2b": (
-                    "https://test.com/myfile.xlsx",
-                    "a8b51b81-1fa7-499d-a9f2-3d0bce06b5b5",
-                    "xlsx",
-                    357102,
-                    datetime(2019, 11, 10, 8, 4, 26, tzinfo=timezone.utc),
-                    "1234",
-                )
+                "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5": {
+                    "match": {"id": "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5"},
+                    "update__resources__1a2b": {"broken_link": True},
+                }
             },
         )
 
@@ -256,20 +253,14 @@ class TestHeadResults:
         check.equal(change_output, ["UNSPECIFIED SERVER ERROR: 1a2b"])
         check.equal(broken_output, ["UNSPECIFIED SERVER ERROR: 1a2b"])
         check.equal(get_output, [])
-        resources_to_update = head_results.get_resources_to_update()
-        check.equal(resources_to_update, {})
-        broken_resources = head_results.get_broken_resources()
+        datasets_to_revise = head_results.get_datasets_to_revise()
         check.equal(
-            broken_resources,
+            datasets_to_revise,
             {
-                "1a2b": (
-                    "https://test.com/myfile.xlsx",
-                    "a8b51b81-1fa7-499d-a9f2-3d0bce06b5b5",
-                    "xlsx",
-                    357102,
-                    datetime(2019, 11, 10, 8, 4, 26, tzinfo=timezone.utc),
-                    "1234",
-                )
+                "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5": {
+                    "match": {"id": "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5"},
+                    "update__resources__1a2b": {"broken_link": True},
+                }
             },
         )
         resources_to_get = head_results.get_distributed_resources_to_get()
@@ -303,6 +294,7 @@ class TestHeadResults:
             "https://test2.com/myfile.xlsx",
             "a8b51b81-1fa7-499d-a9f2-3d0bce06b5b6",
             "xlsx",
+            "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e6",
             357103,
             datetime(2019, 11, 10, 8, 4, 27, tzinfo=timezone.utc),
             "1235",
@@ -327,15 +319,14 @@ class TestHeadResults:
         check.equal(resources_to_get[1], resource2)
         netlocs = head_results.get_netlocs()
         check.equal(sorted(netlocs), ["test.com", "test2.com"])
-        resources_to_update = head_results.get_resources_to_update()
-        check.equal(resources_to_update, {})
-        broken_resources = head_results.get_broken_resources()
-        check.equal(broken_resources, {})
+        datasets_to_revise = head_results.get_datasets_to_revise()
+        check.equal(datasets_to_revise, {})
 
         resource2 = (
             "https://test2.com/myfile.xlsx",
             "a8b51b81-1fa7-499d-a9f2-3d0bce06b5b6",
             "xlsx",
+            "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e6",
             None,
             None,
             "",
@@ -354,16 +345,17 @@ class TestHeadResults:
         check.equal(change_output, ["etag|size|modified: 1a2b"])
         check.equal(broken_output, [])
         check.equal(get_output, [])
-        resources_to_update = head_results.get_resources_to_update()
+        datasets_to_revise = head_results.get_datasets_to_revise()
         check.equal(
-            resources_to_update,
+            datasets_to_revise,
             {
-                "1a2b": (
-                    357102,
-                    datetime(2019, 11, 10, 8, 4, 26, tzinfo=timezone.utc),
-                    "1234",
-                )
+                "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e6": {
+                    "match": {"id": "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e6"},
+                    "update__resources__1a2b": {
+                        "hash": "1234",
+                        "size": 357102,
+                        "last_modified": "2019-11-10T08:04:26",
+                    },
+                }
             },
         )
-        broken_resources = head_results.get_broken_resources()
-        check.equal(broken_resources, {})

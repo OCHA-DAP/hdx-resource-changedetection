@@ -12,7 +12,7 @@ from .retrieval import Retrieval
 from hdx.api.configuration import Configuration
 from hdx.data.user import User
 from hdx.facades.infer_arguments import facade
-from hdx.resource.changedetection.resource_updater import ResourceUpdater
+from hdx.resource.changedetection.dataset_updater import DatasetUpdater
 from hdx.scraper.framework.utilities.reader import Read
 from hdx.utilities.dateparse import now_utc
 from hdx.utilities.easy_logging import setup_logging
@@ -85,24 +85,12 @@ def main(
         results.process()
         results.output()
 
-        resources_to_update = head_results.get_resources_to_update()
-        resources_to_update.update(results.get_resources_to_update())
-        broken_resources = head_results.get_broken_resources()
-        broken_resources.update(results.get_broken_resources())
+        datasets_to_revise = head_results.get_datasets_to_revise()
+        datasets_to_revise.update(results.get_datasets_to_revise())
 
-        resource_updater = ResourceUpdater(configuration)
-
-        # async this?
-        for resource_id, resource_info in resources_to_update.items():
-            resource_updater.update_resource(
-                resource_id,
-                resource_info[0],
-                resource_info[1],
-                resource_info[2],
-            )
-        for resource_id, resource_info in broken_resources.items():
-            resource_updater.mark_resource_broken(resource_id)
-        resource_updater.output()
+        dataset_updater = DatasetUpdater(configuration, datasets_to_revise)
+        dataset_updater.process()
+        dataset_updater.output()
 
     logger.info(f"{updated_by_script} completed!")
 

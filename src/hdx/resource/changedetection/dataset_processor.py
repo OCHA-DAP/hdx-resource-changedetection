@@ -30,6 +30,7 @@ class DatasetProcessor:
                 url = resource["url"]
                 resource_id = resource["id"]
                 resource_format = resource["format"]
+                dataset_id = dataset["id"]
                 size = resource.get("size")
                 last_modified = parse_date(resource["last_modified"])
                 hash = resource.get("hash")
@@ -37,6 +38,7 @@ class DatasetProcessor:
                     url,
                     resource_id,
                     resource_format,
+                    dataset_id,
                     size,
                     last_modified,
                     hash,

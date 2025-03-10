@@ -52,3 +52,15 @@ def is_server_error(ex: BaseException) -> bool:
         )
         return True
     return False
+
+
+def revise_resource(
+    datasets_to_revise: Dict,
+    dataset_id: str,
+    resource_id: str,
+    resource_info: Dict = {"broken_link": True},
+) -> None:
+    dataset_to_revise = datasets_to_revise.get(dataset_id, {})
+    dataset_to_revise["match"] = {"id": dataset_id}
+    dataset_to_revise[f"update__resources__{resource_id}"] = resource_info
+    datasets_to_revise[dataset_id] = dataset_to_revise

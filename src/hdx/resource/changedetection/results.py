@@ -3,7 +3,7 @@ from datetime import datetime
 from http import HTTPStatus
 from typing import Dict, List, Tuple
 
-from .utilities import log_output, status_lookup
+from .utilities import log_output, revise_resource, status_lookup
 from hdx.utilities.dateparse import parse_date
 from hdx.utilities.dictandlist import dict_of_lists_add
 from hdx.utilities.typehint import ListTuple
@@ -21,8 +21,7 @@ class Results:
         self._today = today
         self._results = results
         self._resources = resources
-        self._resources_to_update = {}
-        self._broken_resources = {}
+        self._datasets_to_revise = {}
         self._change_output = {}
         self._broken_output = {}
 
@@ -30,7 +29,8 @@ class Results:
         for resource_id, result in self._results.items():
             what_changed = []
             resource = self._resources[resource_id]
-            size, last_modified, etag, status = result
+            dataset_id = resource[3]
+            size, last_modified, hash, status = result
             if status != 0 and status != HTTPStatus.OK:
                 status_str = status_lookup[status]
                 if status < 0:
@@ -39,45 +39,54 @@ class Results:
                             self._change_output, status_str, resource_id
                         )
                         if status < -100:
-                            self._broken_resources[resource_id] = resource
+                            revise_resource(
+                                self._datasets_to_revise,
+                                dataset_id,
+                                resource_id,
+                            )
                             dict_of_lists_add(
                                 self._broken_output, status_str, resource_id
                             )
                         continue
                 else:
                     if status != HTTPStatus.TOO_MANY_REQUESTS:
-                        self._broken_resources[resource_id] = resource
+                        revise_resource(
+                            self._datasets_to_revise, dataset_id, resource_id
+                        )
                     dict_of_lists_add(
                         self._broken_output, status_str, resource_id
                     )
             else:
                 status_str = None
 
+            resource_info = {}
             update = False
             if status == HTTPStatus.OK:
                 etag_str = "etag"
             else:
                 etag_str = "hash"
 
-            if etag:
-                if etag != resource[5]:
+            if hash:
+                if hash != resource[6]:
                     what_changed.append(etag_str)
+                    resource_info["hash"] = hash
                     update = True
             else:
-                if resource[5]:
+                if resource[6]:
                     status = f"no {etag_str}"
                     what_changed.append(status)
 
             if size:
-                if size != resource[3]:
+                if size != resource[4]:
                     status = "size"
                     what_changed.append(status)
+                    resource_info["size"] = size
                     update = True
             else:
-                if resource[3]:
+                if resource[4]:
                     what_changed.append("no size")
 
-            resource_date = resource[4]
+            resource_date = resource[5]
             if last_modified:
                 last_modified = parse_date(last_modified)
                 if not resource_date or last_modified > resource_date:
@@ -103,11 +112,16 @@ class Results:
                     else:
                         last_modified = self._today
                         what_changed.append("today")
-                self._resources_to_update[resource_id] = (
-                    size,
-                    last_modified,
-                    etag,
-                )
+                if last_modified and last_modified != resource_date:
+                    dt_notz = last_modified.replace(tzinfo=None)
+                    resource_info["last_modified"] = dt_notz.isoformat()
+                if resource_info:
+                    revise_resource(
+                        self._datasets_to_revise,
+                        dataset_id,
+                        resource_id,
+                        resource_info,
+                    )
 
             what_changed = "|".join(what_changed)
             if not what_changed:
@@ -129,8 +143,5 @@ class Results:
             broken_output = []
         return change_output, broken_output
 
-    def get_resources_to_update(self) -> Dict[str, Tuple]:
-        return self._resources_to_update
-
-    def get_broken_resources(self) -> Dict[str, Tuple]:
-        return self._broken_resources
+    def get_datasets_to_revise(self) -> Dict[str, Dict]:
+        return self._datasets_to_revise
