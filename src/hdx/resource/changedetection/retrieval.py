@@ -1,10 +1,4 @@
-"""Utility to download and hash resources. Uses asyncio. Note that the purpose of
-asyncio is to help with IO-bound rather than CPU-bound code (for which multiprocessing
-is more suitable as it leverages multiple CPUs). Asyncio allows you to structure your
-code so that when one piece of linear single-threaded code (coroutine) is waiting for
-something to happen another can take over and use the CPU. While conceptually similar to
-threading, the difference is that with asyncio, it is the task of the developer rather
-than the OS to decide when to switch to the next task.
+"""Utility to download and hash resources. Uses asyncio.
 """
 
 import asyncio
@@ -37,6 +31,7 @@ class Retrieval:
 
     Args:
         user_agent (str): User agent string to use when downloading
+        netlocs (Set[str]): Netlocs of resources to download
         url_ignore (Optional[str]): Parts of url to ignore for special xlsx handling
     """
 
@@ -218,7 +213,6 @@ class Retrieval:
 
         Args:
             resources_to_get (List[Tuple]): List of resources to get
-            loop (uvloop.Loop): Event loop to use
 
         Returns:
             Dict[str, Tuple]: Resources information including hashes

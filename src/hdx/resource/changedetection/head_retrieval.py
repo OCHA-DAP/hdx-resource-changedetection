@@ -1,10 +1,4 @@
-"""Utility to download and hash resources. Uses asyncio. Note that the purpose of
-asyncio is to help with IO-bound rather than CPU-bound code (for which multiprocessing
-is more suitable as it leverages multiple CPUs). Asyncio allows you to structure your
-code so that when one piece of linear single-threaded code (coroutine) is waiting for
-something to happen another can take over and use the CPU. While conceptually similar to
-threading, the difference is that with asyncio, it is the task of the developer rather
-than the OS to decide when to switch to the next task.
+"""Utility to get HTTP headers of resources. Uses asyncio.
 """
 
 import asyncio
@@ -34,6 +28,7 @@ class HeadRetrieval:
 
     Args:
         user_agent (str): User agent string to use when downloading
+        netlocs (Set[str]): Netlocs of resources to download
         url_ignore (Optional[str]): Parts of url to ignore for special xlsx handling
     """
 
@@ -68,7 +63,6 @@ class HeadRetrieval:
         Args:
             url (str): Resource to get
             resource_id (str): Resource id
-            resource_format (str): Resource format
             session (Union[aiohttp.ClientSession, RateLimiter]): session to use for requests
 
         Returns:
@@ -127,15 +121,15 @@ class HeadRetrieval:
     async def check_urls(
         self, resources_to_check: List[Tuple]
     ) -> Dict[str, Tuple]:
-        """Asynchronous code to download resources and hash them. Return dictionary with
-        resources information including hashes.
+        """Asynchronous code to get HTTP headers of resources. Return
+        dictionary with resources information including etags, last modified
+        and size.
 
         Args:
             resources_to_check (List[Tuple]): List of resources to be checked
-            loop (uvloop.Loop): Event loop to use
 
         Returns:
-            Dict[str, Tuple]: Resources information including hashes
+            Dict[str, Tuple]: Resources information
         """
         tasks = []
 
@@ -170,8 +164,8 @@ class HeadRetrieval:
             return responses
 
     def retrieve(self, resources_to_check: List[Tuple]) -> Dict[str, Tuple]:
-        """Download resources and hash them. Return dictionary with resources information
-        including hashes.
+        """Get HTTP headers of resources and hash them. Return dictionary with
+        resources information including etags, last modified and size.
 
         Args:
             resources_to_check (List[Tuple]): List of resources to be checked
