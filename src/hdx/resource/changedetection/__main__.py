@@ -2,6 +2,7 @@
 
 import logging
 from os.path import expanduser, join
+from urllib.parse import urlsplit
 
 from . import __version__
 from .dataset_processor import DatasetProcessor
@@ -31,12 +32,14 @@ updated_by_script = "HDX Resource Change Detection"
 def main(
     save: bool = False,
     use_saved: bool = False,
+    revise: bool = False,
 ) -> None:
     """Generate datasets and create them in HDX
 
     Args:
         save (bool): Save downloaded data. Defaults to False.
         use_saved (bool): Use saved data. Defaults to False.
+        revise (bool): Whether to revise datasets. Defaults to False.
     Returns:
         None
     """
@@ -61,7 +64,8 @@ def main(
             hdx_auth=configuration.get_api_key(),
             today=today,
         )
-        dataset_processor = DatasetProcessor(configuration)
+        netlocs_ignore = (urlsplit(configuration.get_hdx_site_url()).netloc,)
+        dataset_processor = DatasetProcessor(configuration, netlocs_ignore)
         datasets = dataset_processor.get_all_datasets()
         dataset_processor.process(datasets)
 
@@ -89,7 +93,7 @@ def main(
         datasets_to_revise.update(results.get_datasets_to_revise())
 
         dataset_updater = DatasetUpdater(configuration, datasets_to_revise)
-        dataset_updater.process()
+        dataset_updater.process(revise)
         dataset_updater.output()
 
     logger.info(f"{updated_by_script} completed!")

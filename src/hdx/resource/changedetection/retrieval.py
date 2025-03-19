@@ -1,5 +1,4 @@
-"""Utility to download and hash resources. Uses asyncio.
-"""
+"""Utility to download and hash resources. Uses asyncio."""
 
 import asyncio
 import hashlib
@@ -32,7 +31,7 @@ class Retrieval:
     Args:
         user_agent (str): User agent string to use when downloading
         netlocs (Set[str]): Netlocs of resources to download
-        url_ignore (Optional[str]): Parts of url to ignore for special xlsx handling
+        xlsx_url_ignore (Optional[str]): Parts of url to ignore for special xlsx handling
     """
 
     ignore_mimetypes = ["application/octet-stream", "application/binary"]
@@ -58,10 +57,10 @@ class Retrieval:
         self,
         user_agent: str,
         netlocs: Set[str],
-        url_ignore: Optional[str] = None,
+        xlsx_url_ignore: Optional[str] = None,
     ) -> None:
         self._user_agent = user_agent
-        self._url_ignore: Optional[str] = url_ignore
+        self._xlsx_url_ignore: Optional[str] = xlsx_url_ignore
         # Limit to 4 connections per second to a host
         self._rate_limiters = {
             netloc: AsyncLimiter(4, 1) for netloc in netlocs
@@ -128,7 +127,11 @@ class Retrieval:
                     or mimetype in self.ignore_mimetypes
                 )
                 and signature == self.signatures["xlsx"][0]
-                and (self._url_ignore not in url if self._url_ignore else True)
+                and (
+                    self._xlsx_url_ignore not in url
+                    if self._xlsx_url_ignore
+                    else True
+                )
             ):
                 xlsxbuffer = bytearray(first_chunk)
                 async for chunk in iterator:
