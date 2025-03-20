@@ -64,7 +64,10 @@ def main(
             hdx_auth=configuration.get_api_key(),
             today=today,
         )
-        netlocs_ignore = (urlsplit(configuration.get_hdx_site_url()).netloc,)
+        netlocs_ignore = {
+            "data.humdata.org",
+            urlsplit(configuration.get_hdx_site_url()).netloc,
+        }
         dataset_processor = DatasetProcessor(configuration, netlocs_ignore)
         datasets = dataset_processor.get_all_datasets()
         dataset_processor.process(datasets)

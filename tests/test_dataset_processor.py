@@ -24,9 +24,10 @@ class TestDatasetProcessor:
                 True,
                 today=today,
             )
-            netlocs_ignore = (
+            netlocs_ignore = {
+                "data.humdata.org",
                 urlsplit(configuration.get_hdx_site_url()).netloc,
-            )
+            }
             dataset_processor = DatasetProcessor(configuration, netlocs_ignore)
             datasets = dataset_processor.get_all_datasets()
             dataset_processor.process(datasets)
