@@ -75,7 +75,7 @@ hdx-python-api==6.3.8
     # via
     #   hdx-resource-changedetection (pyproject.toml)
     #   hdx-python-scraper
-hdx-python-country==3.8.8
+hdx-python-country==3.8.9
     # via
     #   hdx-resource-changedetection (pyproject.toml)
     #   hdx-python-api
@@ -246,7 +246,7 @@ ruamel-yaml==0.18.10
     # via hdx-python-utilities
 ruamel-yaml-clib==0.2.12
     # via ruamel-yaml
-setuptools==77.0.1
+setuptools==77.0.3
     # via ckanapi
 shellingham==1.5.4
     # via typer

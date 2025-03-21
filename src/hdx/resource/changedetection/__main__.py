@@ -97,7 +97,6 @@ def main(
 
         dataset_updater = DatasetUpdater(configuration, datasets_to_revise)
         dataset_updater.process(revise)
-        dataset_updater.output()
 
     logger.info(f"{updated_by_script} completed!")
 
