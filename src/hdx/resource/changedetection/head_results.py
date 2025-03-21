@@ -38,6 +38,9 @@ class HeadResults:
                 status_str = status_lookup[status]
                 if status in (
                     HTTPStatus.FORBIDDEN,
+                    HTTPStatus.METHOD_NOT_ALLOWED,
+                    HTTPStatus.REQUEST_TIMEOUT,
+                    HTTPStatus.CONFLICT,
                     HTTPStatus.TOO_MANY_REQUESTS,
                 ):
                     # Server may not like HEAD requests or too many requests

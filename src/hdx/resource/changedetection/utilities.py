@@ -38,13 +38,13 @@ def is_server_error(ex: BaseException) -> bool:
         logger.info(f"Retrying: {str(ex)}")
         return True
     if isinstance(ex, aiohttp.ClientResponseError) and ex.status in (
-        408,
-        409,
-        429,
-        500,
-        502,
-        503,
-        504,
+        HTTPStatus.REQUEST_TIMEOUT,
+        HTTPStatus.CONFLICT,
+        HTTPStatus.TOO_MANY_REQUESTS,
+        HTTPStatus.INTERNAL_SERVER_ERROR,
+        HTTPStatus.BAD_GATEWAY,
+        HTTPStatus.SERVICE_UNAVAILABLE,
+        HTTPStatus.GATEWAY_TIMEOUT,
     ):
         # These are too common to log by default
         logger.debug(

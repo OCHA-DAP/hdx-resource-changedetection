@@ -1,4 +1,4 @@
-from typing import Dict, List, Set, Tuple
+from typing import Dict, Iterable, List, Set, Tuple
 from urllib.parse import urlsplit
 
 from hdx.api.configuration import Configuration
@@ -9,10 +9,13 @@ from hdx.utilities.dictandlist import list_distribute_contents
 
 
 class DatasetProcessor:
-    def __init__(self, configuration: Configuration):
+    def __init__(
+        self, configuration: Configuration, netlocs_ignore: Iterable[str] = ()
+    ):
         self._configuration = configuration
         self._netlocs = set()
         self._resources = {}
+        self._netlocs_ignore = netlocs_ignore
 
     def get_all_datasets(self) -> List[Dataset]:
         reader = Read.get_reader()
@@ -28,6 +31,10 @@ class DatasetProcessor:
         for dataset in datasets:
             for resource in dataset.get_resources():
                 url = resource["url"]
+                netloc = urlsplit(url).netloc
+                if netloc in self._netlocs_ignore:
+                    continue
+                self._netlocs.add(netloc)
                 resource_id = resource["id"]
                 resource_format = resource["format"]
                 dataset_id = dataset["id"]
@@ -49,9 +56,7 @@ class DatasetProcessor:
 
     def get_distributed_resources_to_check(self) -> List[Tuple]:
         def get_netloc(x):
-            netloc = urlsplit(x[0]).netloc
-            self._netlocs.add(netloc)
-            return netloc
+            return urlsplit(x[0]).netloc
 
         return list_distribute_contents(
             list(self._resources.values()), get_netloc

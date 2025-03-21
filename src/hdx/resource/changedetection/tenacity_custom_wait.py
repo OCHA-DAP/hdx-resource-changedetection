@@ -1,3 +1,4 @@
+from http import HTTPStatus
 from typing import TYPE_CHECKING, Union
 
 from aiohttp import ClientResponseError
@@ -32,7 +33,7 @@ class custom_wait(wait_base):
         exp_base: Union[int, float] = 2,
         min: _utils.time_unit_type = 0,  # noqa
         min_multiplier: int = 8,
-        multiply_codes: tuple = (429,),
+        multiply_codes: tuple = (HTTPStatus.TOO_MANY_REQUESTS,),
     ) -> None:
         self.multiplier = multiplier
         self.min = _utils.to_seconds(min)
