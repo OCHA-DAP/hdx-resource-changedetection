@@ -28,8 +28,8 @@ class DatasetUpdater:
             dataset_to_revise["update__batch_mode"] = "KEEP_OLD"
             dataset_to_revise["update__skip_validation"] = "true"
             dataset_to_revise["filter"] = "-extras"
-            # dataset._write_to_hdx(
-            #     "revise",
-            #     dataset_to_revise,
-            #     id_field_name="match",
-            # )
+            dataset._write_to_hdx(
+                "revise",
+                dataset_to_revise,
+                id_field_name="match",
+            )
