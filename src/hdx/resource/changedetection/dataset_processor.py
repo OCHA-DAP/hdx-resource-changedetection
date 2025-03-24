@@ -1,4 +1,4 @@
-from typing import Dict, Iterable, List, Set, Tuple
+from typing import Dict, Iterable, List, Optional, Set, Tuple
 from urllib.parse import urlsplit
 
 from hdx.api.configuration import Configuration
@@ -10,20 +10,29 @@ from hdx.utilities.dictandlist import list_distribute_contents
 
 class DatasetProcessor:
     def __init__(
-        self, configuration: Configuration, netlocs_ignore: Iterable[str] = ()
+        self,
+        configuration: Configuration,
+        netlocs_ignore: Iterable[str] = (),
+        task_code: Optional[str] = None,
     ):
         self._configuration = configuration
         self._netlocs = set()
         self._resources = {}
         self._netlocs_ignore = netlocs_ignore
+        self._task_code = task_code
 
     def get_all_datasets(self) -> List[Dataset]:
         reader = Read.get_reader()
+        filters = []
+        if self._task_code:
+            filters.append(f"id:{self._task_code}*")
+        filters.append(self._configuration.get("fq"))
+
         return reader.search_datasets(
             filename="datasets",
             configuration=self._configuration,
             query=self._configuration["query"],
-            fq=self._configuration.get("fq"),
+            fq=" ".join(filters),
             sort="metadata_created asc",
         )
 

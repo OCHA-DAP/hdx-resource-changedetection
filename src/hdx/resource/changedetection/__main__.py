@@ -14,6 +14,7 @@ from hdx.api.configuration import Configuration
 from hdx.data.user import User
 from hdx.facades.infer_arguments import facade
 from hdx.resource.changedetection.dataset_updater import DatasetUpdater
+from hdx.resource.changedetection.task_manager import TaskManager
 from hdx.scraper.framework.utilities.reader import Read
 from hdx.utilities.dateparse import now_utc
 from hdx.utilities.easy_logging import setup_logging
@@ -33,6 +34,7 @@ def main(
     save: bool = False,
     use_saved: bool = False,
     revise: bool = False,
+    run_continously: bool = False,
 ) -> None:
     """Generate datasets and create them in HDX
 
@@ -40,6 +42,7 @@ def main(
         save (bool): Save downloaded data. Defaults to False.
         use_saved (bool): Use saved data. Defaults to False.
         revise (bool): Whether to revise datasets. Defaults to False.
+        run_continously (bool): Whether to continue running tasks. Defaults to False.
     Returns:
         None
     """
@@ -64,39 +67,51 @@ def main(
             hdx_auth=configuration.get_api_key(),
             today=today,
         )
-        netlocs_ignore = {
-            "data.humdata.org",
-            urlsplit(configuration.get_hdx_site_url()).netloc,
-        }
-        dataset_processor = DatasetProcessor(configuration, netlocs_ignore)
-        datasets = dataset_processor.get_all_datasets()
-        dataset_processor.process(datasets)
+        task_manager = TaskManager(configuration.get("redis_url"))
+        while task_code := task_manager.sync_acquire_task():
+            netlocs_ignore = {
+                "data.humdata.org",
+                urlsplit(configuration.get_hdx_site_url()).netloc,
+            }
+            dataset_processor = DatasetProcessor(
+                configuration, netlocs_ignore, task_code
+            )
+            datasets = dataset_processor.get_all_datasets()
+            dataset_processor.process(datasets)
 
-        resources_to_check = (
-            dataset_processor.get_distributed_resources_to_check()
-        )
-        netlocs = dataset_processor.get_netlocs()
-        retrieval = HeadRetrieval(configuration.get_user_agent(), netlocs)
-        results = retrieval.retrieve(resources_to_check)
+            resources_to_check = (
+                dataset_processor.get_distributed_resources_to_check()
+            )
+            netlocs = dataset_processor.get_netlocs()
+            retrieval = HeadRetrieval(configuration.get_user_agent(), netlocs)
+            results = retrieval.retrieve(resources_to_check)
 
-        head_results = HeadResults(results, dataset_processor.get_resources())
-        head_results.process()
-        head_results.output()
+            head_results = HeadResults(
+                results, dataset_processor.get_resources()
+            )
+            head_results.process()
+            head_results.output()
 
-        resources_to_get = head_results.get_distributed_resources_to_get()
-        netlocs = head_results.get_netlocs()
-        retrieval = Retrieval(configuration.get_user_agent(), netlocs)
-        results = retrieval.retrieve(resources_to_get)
+            resources_to_get = head_results.get_distributed_resources_to_get()
+            netlocs = head_results.get_netlocs()
+            retrieval = Retrieval(configuration.get_user_agent(), netlocs)
+            results = retrieval.retrieve(resources_to_get)
 
-        results = Results(today, results, dataset_processor.get_resources())
-        results.process()
-        results.output()
+            results = Results(
+                today, results, dataset_processor.get_resources()
+            )
+            results.process()
+            results.output()
 
-        datasets_to_revise = head_results.get_datasets_to_revise()
-        datasets_to_revise.update(results.get_datasets_to_revise())
+            datasets_to_revise = head_results.get_datasets_to_revise()
+            datasets_to_revise.update(results.get_datasets_to_revise())
 
-        dataset_updater = DatasetUpdater(configuration, datasets_to_revise)
-        dataset_updater.process(revise)
+            dataset_updater = DatasetUpdater(configuration, datasets_to_revise)
+            dataset_updater.process(revise)
+
+            task_manager.sync_finish_task(task_code)
+            if not run_continously:
+                break
 
     logger.info(f"{updated_by_script} completed!")
 

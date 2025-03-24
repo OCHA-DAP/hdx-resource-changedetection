@@ -1,2 +1,3 @@
 query: "*:*"
 fq: "organization:hdx"
+redis_url: "redis://localhost:6379/2?decode_responses=True"
