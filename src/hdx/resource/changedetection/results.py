@@ -61,6 +61,7 @@ class Results:
 
             resource_info = {}
             update = False
+            hash_changed = False
             if status == HTTPStatus.OK:
                 etag_str = "etag"
             else:
@@ -70,6 +71,7 @@ class Results:
                 if hash != resource[6]:
                     what_changed.append(etag_str)
                     resource_info["hash"] = hash
+                    hash_changed = True
                     update = True
             else:
                 if resource[6]:
@@ -92,7 +94,9 @@ class Results:
                 if not resource_date or last_modified > resource_date:
                     status = "modified"
                     what_changed.append(status)
-                    update = True
+                    # Only update if hash has also changed
+                    if hash_changed:
+                        update = True
                 elif last_modified < resource_date:
                     what_changed.append("modified http<resource")
             else:
@@ -112,7 +116,12 @@ class Results:
                     else:
                         last_modified = self._today
                         what_changed.append("today")
-                if last_modified and last_modified != resource_date:
+                # Only update last modified if hash has changed
+                if (
+                    hash_changed
+                    and last_modified
+                    and last_modified != resource_date
+                ):
                     dt_notz = last_modified.replace(tzinfo=None)
                     resource_info["last_modified"] = dt_notz.isoformat()
                 if resource_info:

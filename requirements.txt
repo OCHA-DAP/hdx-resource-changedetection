@@ -4,7 +4,7 @@ aiodns==3.2.0
     # via aiohttp
 aiohappyeyeballs==2.6.1
     # via aiohttp
-aiohttp==3.11.14
+aiohttp==3.11.15
     # via hdx-resource-changedetection (pyproject.toml)
 aiolimiter==1.2.1
     # via hdx-resource-changedetection (pyproject.toml)
@@ -37,7 +37,7 @@ ckanapi==4.8
     # via hdx-python-api
 click==8.1.8
     # via typer
-coverage==7.7.0
+coverage==7.8.0
     # via pytest-cov
 defopt==6.4.0
     # via hdx-python-api
@@ -57,7 +57,7 @@ et-xmlfile==2.0.0
     # via openpyxl
 filelock==3.18.0
     # via virtualenv
-frictionless==5.18.0
+frictionless==5.18.1
     # via hdx-python-utilities
 frozenlist==1.5.0
     # via
@@ -75,7 +75,7 @@ hdx-python-api==6.3.8
     # via
     #   hdx-resource-changedetection (pyproject.toml)
     #   hdx-python-scraper
-hdx-python-country==3.8.9
+hdx-python-country==3.9.2
     # via
     #   hdx-resource-changedetection (pyproject.toml)
     #   hdx-python-api
@@ -88,7 +88,7 @@ hdx-python-utilities==3.8.5
     #   hdx-python-api
     #   hdx-python-country
     #   hdx-python-scraper
-humanize==4.12.1
+humanize==4.12.2
     # via frictionless
 identify==2.6.9
     # via pre-commit
@@ -135,7 +135,7 @@ mdurl==0.1.2
     # via markdown-it-py
 more-itertools==10.6.0
     # via inflect
-multidict==6.2.0
+multidict==6.3.1
     # via
     #   aiohttp
     #   yarl
@@ -163,7 +163,7 @@ pockets==0.9.1
     # via sphinxcontrib-napoleon
 pre-commit==4.2.0
     # via hdx-resource-changedetection (pyproject.toml)
-propcache==0.3.0
+propcache==0.3.1
     # via
     #   aiohttp
     #   yarl
@@ -171,15 +171,15 @@ pyasn1==0.6.1
     # via
     #   pyasn1-modules
     #   rsa
-pyasn1-modules==0.4.1
+pyasn1-modules==0.4.2
     # via google-auth
 pycares==4.5.0
     # via aiodns
 pycparser==2.22
     # via cffi
-pydantic==2.10.6
+pydantic==2.11.1
     # via frictionless
-pydantic-core==2.27.2
+pydantic-core==2.33.0
     # via pydantic
 pygments==2.19.1
     # via rich
@@ -190,9 +190,9 @@ pytest==8.3.5
     #   hdx-resource-changedetection (pyproject.toml)
     #   pytest-check
     #   pytest-cov
-pytest-check==2.5.1
+pytest-check==2.5.2
     # via hdx-resource-changedetection (pyproject.toml)
-pytest-cov==6.0.0
+pytest-cov==6.1.0
     # via hdx-resource-changedetection (pyproject.toml)
 python-dateutil==2.9.0.post0
     # via
@@ -234,9 +234,9 @@ requests-oauthlib==2.0.0
     # via google-auth-oauthlib
 rfc3986==2.0.0
     # via frictionless
-rich==13.9.4
+rich==14.0.0
     # via typer
-rpds-py==0.23.1
+rpds-py==0.24.0
     # via
     #   jsonschema
     #   referencing
@@ -246,7 +246,7 @@ ruamel-yaml==0.18.10
     # via hdx-python-utilities
 ruamel-yaml-clib==0.2.12
     # via ruamel-yaml
-setuptools==77.0.3
+setuptools==78.1.0
     # via ckanapi
 shellingham==1.5.4
     # via typer
@@ -262,8 +262,6 @@ six==1.17.0
     #   sphinxcontrib-napoleon
 sphinxcontrib-napoleon==0.7
     # via defopt
-stringcase==1.2.0
-    # via frictionless
 structlog==25.2.0
     # via libhxl
 tableschema-to-template==0.0.13
@@ -282,7 +280,7 @@ typeguard==4.4.2
     # via inflect
 typer==0.15.2
     # via frictionless
-typing-extensions==4.12.2
+typing-extensions==4.13.0
     # via
     #   frictionless
     #   pydantic
@@ -290,6 +288,9 @@ typing-extensions==4.12.2
     #   referencing
     #   typeguard
     #   typer
+    #   typing-inspection
+typing-inspection==0.4.0
+    # via pydantic
 unidecode==1.3.8
     # via
     #   libhxl
@@ -300,7 +301,7 @@ urllib3==2.3.0
     #   requests
 validators==0.34.0
     # via frictionless
-virtualenv==20.29.3
+virtualenv==20.30.0
     # via pre-commit
 wheel==0.45.1
     # via libhxl

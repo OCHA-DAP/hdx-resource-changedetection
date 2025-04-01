@@ -49,7 +49,7 @@ class TestResults:
                     "match": {"id": "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5"},
                     "update__resources__1a2b": {
                         "size": 357103,
-                        "last_modified": "2019-11-10T08:04:27",
+                        # "last_modified": "2019-11-10T08:04:27",  # hash has not changed - don't update
                     },
                 }
             },
@@ -320,12 +320,12 @@ class TestResults:
         check.equal(
             datasets_to_revise,
             {
-                "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5": {
-                    "match": {"id": "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5"},
-                    "update__resources__1a2b": {
-                        "last_modified": "2019-11-10T08:04:26"
-                    },
-                }
+                # "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5": {
+                #     "match": {"id": "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5"},
+                #     "update__resources__1a2b": {
+                #         "last_modified": "2019-11-10T08:04:26"  # hash has not changed - don't update
+                #     },
+                # }
             },
         )
 
@@ -365,12 +365,12 @@ class TestResults:
         check.equal(
             datasets_to_revise,
             {
-                "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5": {
-                    "match": {"id": "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5"},
-                    "update__resources__1a2b": {
-                        "last_modified": "2019-11-10T08:04:26"
-                    },
-                }
+                # "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5": {
+                #     "match": {"id": "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5"},
+                #     "update__resources__1a2b": {
+                #         "last_modified": "2019-11-10T08:04:26"  # hash has not changed - don't update
+                #     },
+                # }
             },
         )
 
