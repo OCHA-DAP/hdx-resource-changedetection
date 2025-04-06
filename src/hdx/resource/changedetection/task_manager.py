@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import os
 import time
 import uuid
 from typing import Dict, List, Optional
@@ -12,10 +13,15 @@ logger = logging.getLogger(__name__)
 
 
 class TaskManager:
-    def __init__(self, redis_url, task_length: int = 1):
+    def __init__(self, task_length: int = 1):
+        redis_url = os.getenv(
+            "REDIS_CONNECTION_URL",
+            "redis://localhost:6379/0?decode_responses=True",
+        )
         self.instance_id: str = str(uuid.uuid4())
         self.redis_client: redis.Redis = redis.from_url(redis_url)
         self.tasks: List[str] = self.generate_tasks(task_length)
+        self._event_loop = asyncio.new_event_loop()
 
     @staticmethod
     def generate_tasks(task_length: int = 1) -> List[str]:
@@ -117,11 +123,11 @@ class TaskManager:
     #     await self.finish_task(task)
 
     def sync_acquire_task(self) -> Optional[str]:
-        task_code = asyncio.run(self.acquire_task())
+        task_code = self._event_loop.run_until_complete(self.acquire_task())
         return task_code
 
     def sync_finish_task(self, task: str) -> None:
-        asyncio.run(self.finish_task(task))
+        self._event_loop.run_until_complete(self.finish_task(task))
 
     # async def main_loop(self) -> None:
     #     """Continuously acquire and perform tasks."""

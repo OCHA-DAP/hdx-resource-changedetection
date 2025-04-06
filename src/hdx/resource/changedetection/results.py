@@ -25,6 +25,12 @@ class Results:
         self._change_output = {}
         self._broken_output = {}
 
+    def add_more_results(
+        self, results: Dict[str, ListTuple], resources: Dict[str, Tuple]
+    ):
+        self._results.update(results)
+        self._resources.update(resources)
+
     def process(self) -> None:
         for resource_id, result in self._results.items():
             what_changed = []

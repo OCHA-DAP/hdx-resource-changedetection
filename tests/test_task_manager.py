@@ -10,9 +10,7 @@ from hdx.resource.changedetection.task_manager import TaskManager
 @pytest_asyncio.fixture
 async def task_manager() -> TaskManager:
     # Create a TaskManager instance.
-    manager = TaskManager(
-        "redis://localhost:6379/2?decode_responses=True", task_length=1
-    )
+    manager = TaskManager(task_length=1)
     # Flush the Redis DB to start fresh.
     await manager.redis_client.flushall()
     yield manager

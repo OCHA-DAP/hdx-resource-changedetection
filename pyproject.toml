@@ -90,7 +90,7 @@ version_scheme = "python-simplified-semver"
 features = ["test"]
 
 [[tool.hatch.envs.hatch-test.matrix]]
-python = ["3.11"]
+python = ["3.12"]
 
 [tool.hatch.envs.hatch-test.scripts]
 run = """

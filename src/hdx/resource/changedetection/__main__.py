@@ -34,7 +34,7 @@ def main(
     save: bool = False,
     use_saved: bool = False,
     revise: bool = False,
-    run_continously: bool = False,
+    use_redis: bool = False,
 ) -> None:
     """Generate datasets and create them in HDX
 
@@ -42,7 +42,7 @@ def main(
         save (bool): Save downloaded data. Defaults to False.
         use_saved (bool): Use saved data. Defaults to False.
         revise (bool): Whether to revise datasets. Defaults to False.
-        run_continously (bool): Whether to continue running tasks. Defaults to False.
+        use_redis (bool): Whether to use redis and split job into tasks. Defaults to False.
     Returns:
         None
     """
@@ -67,8 +67,12 @@ def main(
             hdx_auth=configuration.get_api_key(),
             today=today,
         )
-        task_manager = TaskManager(configuration.get("redis_url"))
-        while task_code := task_manager.sync_acquire_task():
+
+        total_head_results = HeadResults({}, {})
+        total_results = Results(today, {}, {})
+        task_manager = TaskManager()
+        task_code = None
+        while not use_redis or (task_code := task_manager.sync_acquire_task()):
             netlocs_ignore = {
                 "data.humdata.org",
                 urlsplit(configuration.get_hdx_site_url()).netloc,
@@ -86,6 +90,9 @@ def main(
             retrieval = HeadRetrieval(configuration.get_user_agent(), netlocs)
             results = retrieval.retrieve(resources_to_check)
 
+            total_head_results.add_more_results(
+                results, dataset_processor.get_resources()
+            )
             head_results = HeadResults(
                 results, dataset_processor.get_resources()
             )
@@ -97,6 +104,9 @@ def main(
             retrieval = Retrieval(configuration.get_user_agent(), netlocs)
             results = retrieval.retrieve(resources_to_get)
 
+            total_results.add_more_results(
+                results, dataset_processor.get_resources()
+            )
             results = Results(
                 today, results, dataset_processor.get_resources()
             )
@@ -109,9 +119,20 @@ def main(
             dataset_updater = DatasetUpdater(configuration, datasets_to_revise)
             dataset_updater.process(revise)
 
-            task_manager.sync_finish_task(task_code)
-            if not run_continously:
+            if use_redis:
+                task_manager.sync_finish_task(task_code)
+            else:
                 break
+
+            if task_code == "2":
+                break
+
+        if use_redis:
+            logger.info("Finished all tasks")
+            total_head_results.process()
+            total_head_results.output()
+            total_results.process()
+            total_results.output()
 
     logger.info(f"{updated_by_script} completed!")
 
