@@ -9,6 +9,37 @@ from hdx.utilities.path import script_dir_plus_file
 from hdx.utilities.useragent import UserAgent
 
 
+def pytest_addoption(parser):
+    """
+    Register a command-line option (--run-redis) for running tests that need redis.
+    """
+    parser.addoption(
+        "--run-redis",
+        action="store_true",
+        default=False,
+        help="Run tests marked as needing redis",
+    )
+
+
+def pytest_configure(config):
+    config.addinivalue_line(
+        "markers", "needs_redis: mark test as needing redis to run"
+    )
+
+
+def pytest_runtest_setup(item):
+    """
+    This function is invoked before each test is executed. It checks if a test
+    is marked with 'needs_redis' and skips it unless the '--run-redis' flag is provided.
+    """
+    if "needs_redis" in item.keywords and not item.config.getoption(
+        "--run-redis"
+    ):
+        pytest.skip(
+            "Skipping redis test. Use '--run-redis' to run tests that need redis."
+        )
+
+
 @pytest.fixture(scope="session")
 def urls():
     url1 = "https://itcorp.com"
