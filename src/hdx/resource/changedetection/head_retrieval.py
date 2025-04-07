@@ -37,9 +37,7 @@ class HeadRetrieval:
     ) -> None:
         self._user_agent = user_agent
         # Limit to 4 connections per second to a host
-        self._rate_limiters = {
-            netloc: AsyncLimiter(4, 1) for netloc in netlocs
-        }
+        self._rate_limiters = {netloc: AsyncLimiter(4, 1) for netloc in netlocs}
 
     @retry(
         reraise=True,
@@ -114,9 +112,7 @@ class HeadRetrieval:
                 logger.error(ex)
                 return resource_id, None, None, None, -101
 
-    async def check_urls(
-        self, resources_to_check: List[Tuple]
-    ) -> Dict[str, Tuple]:
+    async def check_urls(self, resources_to_check: List[Tuple]) -> Dict[str, Tuple]:
         """Asynchronous code to get HTTP headers of resources. Return
         dictionary with resources information including etags, last modified
         and size.

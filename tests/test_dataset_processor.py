@@ -31,9 +31,7 @@ class TestDatasetProcessor:
             dataset_processor = DatasetProcessor(configuration, netlocs_ignore)
             datasets = dataset_processor.get_all_datasets()
             dataset_processor.process(datasets)
-            resources_to_check = (
-                dataset_processor.get_distributed_resources_to_check()
-            )
+            resources_to_check = dataset_processor.get_distributed_resources_to_check()
             assert resources_to_check == [
                 (
                     "https://drive.google.com/uc?export=download&id=1yK5olSSLBKmfE0T_EgTP_d8l-lTFfz1I",

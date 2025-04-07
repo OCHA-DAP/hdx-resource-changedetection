@@ -67,9 +67,7 @@ class DatasetProcessor:
         def get_netloc(x):
             return urlsplit(x[0]).netloc
 
-        return list_distribute_contents(
-            list(self._resources.values()), get_netloc
-        )
+        return list_distribute_contents(list(self._resources.values()), get_netloc)
 
     def get_netlocs(self) -> Set[str]:
         return self._netlocs

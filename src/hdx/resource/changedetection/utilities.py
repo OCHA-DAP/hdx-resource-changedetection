@@ -47,9 +47,7 @@ def is_server_error(ex: BaseException) -> bool:
         HTTPStatus.GATEWAY_TIMEOUT,
     ):
         # These are too common to log by default
-        logger.debug(
-            f"Retrying: {ex.status} {ex.message} {ex.request_info.url}"
-        )
+        logger.debug(f"Retrying: {ex.status} {ex.message} {ex.request_info.url}")
         return True
     return False
 

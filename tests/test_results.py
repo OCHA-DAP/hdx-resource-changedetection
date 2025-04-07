@@ -185,9 +185,7 @@ class TestResults:
         results = Results(today, results_input, resources)
         results.process()
         change_output, broken_output = results.output()
-        check.equal(
-            change_output, ["FORBIDDEN  no hash|no size|no modified: 1a2b"]
-        )
+        check.equal(change_output, ["FORBIDDEN  no hash|no size|no modified: 1a2b"])
         check.equal(broken_output, ["FORBIDDEN: 1a2b"])
         datasets_to_revise = results.get_datasets_to_revise()
         check.equal(
@@ -379,9 +377,7 @@ class TestResults:
         results = Results(today, results_input, resources)
         results.process()
         change_output, broken_output = results.output()
-        check.equal(
-            change_output, ["SIGNATURE != HDX FORMAT  hash|modified: 1a2b"]
-        )
+        check.equal(change_output, ["SIGNATURE != HDX FORMAT  hash|modified: 1a2b"])
         check.equal(broken_output, [])
         datasets_to_revise = results.get_datasets_to_revise()
         check.equal(
@@ -402,9 +398,7 @@ class TestResults:
         results = Results(today, results_input, resources)
         results.process()
         change_output, broken_output = results.output()
-        check.equal(
-            change_output, ["SIZE != HTTP SIZE  hash|size|modified: 1a2b"]
-        )
+        check.equal(change_output, ["SIZE != HTTP SIZE  hash|size|modified: 1a2b"])
         check.equal(broken_output, [])
         datasets_to_revise = results.get_datasets_to_revise()
         check.equal(

@@ -54,9 +54,7 @@ class TaskManager:
                     },
                 )
                 await pipeline.execute()
-                logger.info(
-                    f"Instance {self.instance_id} acquired task {task}"
-                )
+                logger.info(f"Instance {self.instance_id} acquired task {task}")
                 return task
 
             # Check if task started more than 1 day ago
@@ -71,9 +69,7 @@ class TaskManager:
                     },
                 )
                 await pipeline.execute()
-                logger.info(
-                    f"Instance {self.instance_id} stole stale task {task}"
-                )
+                logger.info(f"Instance {self.instance_id} stole stale task {task}")
                 return task
 
             # Check if progress is stale (>2h)
@@ -100,9 +96,7 @@ class TaskManager:
         now = int(time.time())
         mapping = {"progress": json.dumps(progress), "last_progress_time": now}
         await self.redis_client.hset(key, mapping=mapping)
-        logger.info(
-            f"Instance {self.instance_id} updated progress for task {task}"
-        )
+        logger.info(f"Instance {self.instance_id} updated progress for task {task}")
 
     async def finish_task(self, task: str) -> None:
         key = f"task:{task}"

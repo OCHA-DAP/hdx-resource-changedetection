@@ -41,9 +41,7 @@ class Results:
                 status_str = status_lookup[status]
                 if status < 0:
                     if status < -10:
-                        dict_of_lists_add(
-                            self._change_output, status_str, resource_id
-                        )
+                        dict_of_lists_add(self._change_output, status_str, resource_id)
                         if status < -100:
                             revise_resource(
                                 self._datasets_to_revise,
@@ -59,9 +57,7 @@ class Results:
                         revise_resource(
                             self._datasets_to_revise, dataset_id, resource_id
                         )
-                    dict_of_lists_add(
-                        self._broken_output, status_str, resource_id
-                    )
+                    dict_of_lists_add(self._broken_output, status_str, resource_id)
             else:
                 status_str = None
 
@@ -123,11 +119,7 @@ class Results:
                         last_modified = self._today
                         what_changed.append("today")
                 # Only update last modified if hash has changed
-                if (
-                    hash_changed
-                    and last_modified
-                    and last_modified != resource_date
-                ):
+                if hash_changed and last_modified and last_modified != resource_date:
                     dt_notz = last_modified.replace(tzinfo=None)
                     resource_info["last_modified"] = dt_notz.isoformat()
                 if resource_info:

@@ -48,12 +48,8 @@ def main(
     """
     logger.info(f"##### {lookup} version {__version__} ####")
     configuration = Configuration.read()
-    if not User.check_current_user_organization_access(
-        "hdx", "create_dataset"
-    ):
-        raise PermissionError(
-            "API Token does not give access to HDX organisation!"
-        )
+    if not User.check_current_user_organization_access("hdx", "create_dataset"):
+        raise PermissionError("API Token does not give access to HDX organisation!")
     with wheretostart_tempdir_batch(lookup) as info:
         folder = info["folder"]
 
@@ -83,9 +79,7 @@ def main(
             datasets = dataset_processor.get_all_datasets()
             dataset_processor.process(datasets)
 
-            resources_to_check = (
-                dataset_processor.get_distributed_resources_to_check()
-            )
+            resources_to_check = dataset_processor.get_distributed_resources_to_check()
             netlocs = dataset_processor.get_netlocs()
             retrieval = HeadRetrieval(configuration.get_user_agent(), netlocs)
             results = retrieval.retrieve(resources_to_check)
@@ -93,9 +87,7 @@ def main(
             total_head_results.add_more_results(
                 results, dataset_processor.get_resources()
             )
-            head_results = HeadResults(
-                results, dataset_processor.get_resources()
-            )
+            head_results = HeadResults(results, dataset_processor.get_resources())
             head_results.process()
             head_results.output()
 
@@ -104,12 +96,8 @@ def main(
             retrieval = Retrieval(configuration.get_user_agent(), netlocs)
             results = retrieval.retrieve(resources_to_get)
 
-            total_results.add_more_results(
-                results, dataset_processor.get_resources()
-            )
-            results = Results(
-                today, results, dataset_processor.get_resources()
-            )
+            total_results.add_more_results(results, dataset_processor.get_resources())
+            results = Results(today, results, dataset_processor.get_resources())
             results.process()
             results.output()
 

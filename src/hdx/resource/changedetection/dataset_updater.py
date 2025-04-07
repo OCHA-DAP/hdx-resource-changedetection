@@ -22,9 +22,7 @@ class DatasetUpdater:
         logger.info("\n")
         logger.info(f"Will revise {len(self._datasets_to_revise)} datasets")
         for dataset_to_revise in tqdm(self._datasets_to_revise.values()):
-            dataset = Dataset(
-                dataset_to_revise, configuration=self.configuration
-            )
+            dataset = Dataset(dataset_to_revise, configuration=self.configuration)
             dataset_to_revise["update__batch_mode"] = "KEEP_OLD"
             dataset_to_revise["update__skip_validation"] = "true"
             dataset_to_revise["filter"] = "-extras"
