@@ -1,10 +1,9 @@
-"""Utility to get HTTP headers of resources. Uses asyncio.
-"""
+"""Utility to get HTTP headers of resources. Uses asyncio."""
 
 import asyncio
 import logging
 from timeit import default_timer as timer
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Set, Tuple
 from urllib.parse import urlsplit
 
 import aiohttp
@@ -29,21 +28,16 @@ class HeadRetrieval:
     Args:
         user_agent (str): User agent string to use when downloading
         netlocs (Set[str]): Netlocs of resources to download
-        url_ignore (Optional[str]): Parts of url to ignore for special xlsx handling
     """
 
     def __init__(
         self,
         user_agent: str,
         netlocs: Set[str],
-        url_ignore: Optional[str] = None,
     ) -> None:
         self._user_agent = user_agent
-        self._url_ignore: Optional[str] = url_ignore
         # Limit to 4 connections per second to a host
-        self._rate_limiters = {
-            netloc: AsyncLimiter(4, 1) for netloc in netlocs
-        }
+        self._rate_limiters = {netloc: AsyncLimiter(4, 1) for netloc in netlocs}
 
     @retry(
         reraise=True,
@@ -118,9 +112,7 @@ class HeadRetrieval:
                 logger.error(ex)
                 return resource_id, None, None, None, -101
 
-    async def check_urls(
-        self, resources_to_check: List[Tuple]
-    ) -> Dict[str, Tuple]:
+    async def check_urls(self, resources_to_check: List[Tuple]) -> Dict[str, Tuple]:
         """Asynchronous code to get HTTP headers of resources. Return
         dictionary with resources information including etags, last modified
         and size.

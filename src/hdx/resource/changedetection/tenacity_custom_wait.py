@@ -1,3 +1,4 @@
+from http import HTTPStatus
 from typing import TYPE_CHECKING, Union
 
 from aiohttp import ClientResponseError
@@ -32,7 +33,7 @@ class custom_wait(wait_base):
         exp_base: Union[int, float] = 2,
         min: _utils.time_unit_type = 0,  # noqa
         min_multiplier: int = 8,
-        multiply_codes: tuple = (429,),
+        multiply_codes: tuple = (HTTPStatus.TOO_MANY_REQUESTS,),
     ) -> None:
         self.multiplier = multiplier
         self.min = _utils.to_seconds(min)
@@ -50,9 +51,6 @@ class custom_wait(wait_base):
         minimum = self.min
         ex = retry_state.outcome.exception()
         # Multiply min wait for certain HTTP error codes
-        if (
-            isinstance(ex, ClientResponseError)
-            and ex.status in self.multiply_codes
-        ):
+        if isinstance(ex, ClientResponseError) and ex.status in self.multiply_codes:
             minimum *= self.min_multiplier
         return max(max(0, minimum), min(result, self.max))

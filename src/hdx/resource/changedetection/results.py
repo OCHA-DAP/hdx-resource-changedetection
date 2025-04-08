@@ -25,6 +25,12 @@ class Results:
         self._change_output = {}
         self._broken_output = {}
 
+    def add_more_results(
+        self, results: Dict[str, ListTuple], resources: Dict[str, Tuple]
+    ):
+        self._results.update(results)
+        self._resources.update(resources)
+
     def process(self) -> None:
         for resource_id, result in self._results.items():
             what_changed = []
@@ -35,9 +41,7 @@ class Results:
                 status_str = status_lookup[status]
                 if status < 0:
                     if status < -10:
-                        dict_of_lists_add(
-                            self._change_output, status_str, resource_id
-                        )
+                        dict_of_lists_add(self._change_output, status_str, resource_id)
                         if status < -100:
                             revise_resource(
                                 self._datasets_to_revise,
@@ -53,14 +57,13 @@ class Results:
                         revise_resource(
                             self._datasets_to_revise, dataset_id, resource_id
                         )
-                    dict_of_lists_add(
-                        self._broken_output, status_str, resource_id
-                    )
+                    dict_of_lists_add(self._broken_output, status_str, resource_id)
             else:
                 status_str = None
 
             resource_info = {}
             update = False
+            hash_changed = False
             if status == HTTPStatus.OK:
                 etag_str = "etag"
             else:
@@ -70,6 +73,7 @@ class Results:
                 if hash != resource[6]:
                     what_changed.append(etag_str)
                     resource_info["hash"] = hash
+                    hash_changed = True
                     update = True
             else:
                 if resource[6]:
@@ -92,7 +96,9 @@ class Results:
                 if not resource_date or last_modified > resource_date:
                     status = "modified"
                     what_changed.append(status)
-                    update = True
+                    # Only update if hash has also changed
+                    if hash_changed:
+                        update = True
                 elif last_modified < resource_date:
                     what_changed.append("modified http<resource")
             else:
@@ -112,7 +118,8 @@ class Results:
                     else:
                         last_modified = self._today
                         what_changed.append("today")
-                if last_modified and last_modified != resource_date:
+                # Only update last modified if hash has changed
+                if hash_changed and last_modified and last_modified != resource_date:
                     dt_notz = last_modified.replace(tzinfo=None)
                     resource_info["last_modified"] = dt_notz.isoformat()
                 if resource_info:

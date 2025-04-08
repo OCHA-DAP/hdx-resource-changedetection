@@ -1,4 +1,4 @@
-from typing import Dict, List, Set, Tuple
+from typing import Dict, Iterable, List, Optional, Set, Tuple
 from urllib.parse import urlsplit
 
 from hdx.api.configuration import Configuration
@@ -9,18 +9,30 @@ from hdx.utilities.dictandlist import list_distribute_contents
 
 
 class DatasetProcessor:
-    def __init__(self, configuration: Configuration):
+    def __init__(
+        self,
+        configuration: Configuration,
+        netlocs_ignore: Iterable[str] = (),
+        task_code: Optional[str] = None,
+    ):
         self._configuration = configuration
         self._netlocs = set()
         self._resources = {}
+        self._netlocs_ignore = netlocs_ignore
+        self._task_code = task_code
 
     def get_all_datasets(self) -> List[Dataset]:
         reader = Read.get_reader()
+        filters = []
+        if self._task_code:
+            filters.append(f"id:{self._task_code}*")
+        filters.append(self._configuration.get("fq"))
+
         return reader.search_datasets(
             filename="datasets",
             configuration=self._configuration,
             query=self._configuration["query"],
-            fq=self._configuration.get("fq"),
+            fq=" ".join(filters),
             sort="metadata_created asc",
         )
 
@@ -28,6 +40,10 @@ class DatasetProcessor:
         for dataset in datasets:
             for resource in dataset.get_resources():
                 url = resource["url"]
+                netloc = urlsplit(url).netloc
+                if netloc in self._netlocs_ignore:
+                    continue
+                self._netlocs.add(netloc)
                 resource_id = resource["id"]
                 resource_format = resource["format"]
                 dataset_id = dataset["id"]
@@ -49,13 +65,9 @@ class DatasetProcessor:
 
     def get_distributed_resources_to_check(self) -> List[Tuple]:
         def get_netloc(x):
-            netloc = urlsplit(x[0]).netloc
-            self._netlocs.add(netloc)
-            return netloc
+            return urlsplit(x[0]).netloc
 
-        return list_distribute_contents(
-            list(self._resources.values()), get_netloc
-        )
+        return list_distribute_contents(list(self._resources.values()), get_netloc)
 
     def get_netlocs(self) -> Set[str]:
         return self._netlocs

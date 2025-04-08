@@ -1,5 +1,4 @@
-"""Utility to download and hash resources. Uses asyncio.
-"""
+"""Utility to download and hash resources. Uses asyncio."""
 
 import asyncio
 import hashlib
@@ -32,7 +31,7 @@ class Retrieval:
     Args:
         user_agent (str): User agent string to use when downloading
         netlocs (Set[str]): Netlocs of resources to download
-        url_ignore (Optional[str]): Parts of url to ignore for special xlsx handling
+        xlsx_url_ignore (Optional[str]): Parts of url to ignore for special xlsx handling
     """
 
     ignore_mimetypes = ["application/octet-stream", "application/binary"]
@@ -42,9 +41,7 @@ class Retrieval:
         "shp": ["application/zip", "application/x-zip-compressed"],
         "csv": ["text/csv", "application/zip", "application/x-zip-compressed"],
         "xls": ["application/vnd.ms-excel"],
-        "xlsx": [
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        ],
+        "xlsx": ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"],
     }
     signatures = {
         "json": [b"[", b" [", b"{", b" {"],
@@ -58,14 +55,12 @@ class Retrieval:
         self,
         user_agent: str,
         netlocs: Set[str],
-        url_ignore: Optional[str] = None,
+        xlsx_url_ignore: Optional[str] = None,
     ) -> None:
         self._user_agent = user_agent
-        self._url_ignore: Optional[str] = url_ignore
+        self._xlsx_url_ignore: Optional[str] = xlsx_url_ignore
         # Limit to 4 connections per second to a host
-        self._rate_limiters = {
-            netloc: AsyncLimiter(4, 1) for netloc in netlocs
-        }
+        self._rate_limiters = {netloc: AsyncLimiter(4, 1) for netloc in netlocs}
 
     @retry(
         reraise=True,
@@ -93,9 +88,7 @@ class Retrieval:
         Returns:
             Tuple: Resource information including hash
         """
-        async with session.get(
-            url, allow_redirects=True, chunked=True
-        ) as response:
+        async with session.get(url, allow_redirects=True, chunked=True) as response:
             status = response.status
             if status != 200:
                 exception = ClientResponseError(
@@ -128,15 +121,15 @@ class Retrieval:
                     or mimetype in self.ignore_mimetypes
                 )
                 and signature == self.signatures["xlsx"][0]
-                and (self._url_ignore not in url if self._url_ignore else True)
+                and (
+                    self._xlsx_url_ignore not in url if self._xlsx_url_ignore else True
+                )
             ):
                 xlsxbuffer = bytearray(first_chunk)
                 async for chunk in iterator:
                     size += len(chunk)
                     xlsxbuffer.extend(chunk)
-                workbook = load_workbook(
-                    filename=BytesIO(xlsxbuffer), read_only=True
-                )
+                workbook = load_workbook(filename=BytesIO(xlsxbuffer), read_only=True)
                 md5hash = hashlib.md5()
                 for sheet_name in workbook.sheetnames:
                     sheet = workbook[sheet_name]
@@ -163,9 +156,7 @@ class Retrieval:
                         )
             expected_signatures = self.signatures.get(resource_format)
             if expected_signatures is not None:
-                if not any(
-                    signature[: len(x)] == x for x in expected_signatures
-                ):
+                if not any(signature[: len(x)] == x for x in expected_signatures):
                     return resource_id, size, last_modified, hash, -2
             if size != http_size:
                 return resource_id, size, last_modified, hash, -3
@@ -195,9 +186,7 @@ class Retrieval:
 
         async with self._rate_limiters[host]:
             try:
-                return await self.fetch(
-                    url, resource_id, resource_format, session
-                )
+                return await self.fetch(url, resource_id, resource_format, session)
             except ClientResponseError as ex:
                 logger.error(f"{ex.status} {ex.message} {ex.request_info.url}")
                 return resource_id, None, None, None, ex.status
@@ -205,9 +194,7 @@ class Retrieval:
                 logger.error(ex)
                 return resource_id, None, None, None, -101
 
-    async def check_urls(
-        self, resources_to_get: List[Tuple]
-    ) -> Dict[str, Tuple]:
+    async def check_urls(self, resources_to_get: List[Tuple]) -> Dict[str, Tuple]:
         """Asynchronous code to download resources and hash them. Return dictionary with
         resources information including hashes.
 
