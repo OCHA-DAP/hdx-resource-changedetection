@@ -266,8 +266,8 @@ class TestHeadResults:
         head_results = HeadResults(results_input, broken_resources)
         head_results.process()
         change_output, broken_output, get_output = head_results.output()
-        check.equal(change_output, ["UNSPECIFIED SERVER ERROR: 1a2b"])
-        check.equal(broken_output, ["UNSPECIFIED SERVER ERROR: 1a2b"])
+        check.equal(change_output, ["UNSPECIFIED SERVER ERROR|wontrevise: 1a2b"])
+        check.equal(broken_output, ["UNSPECIFIED SERVER ERROR|wontrevise: 1a2b"])
         check.equal(get_output, [])
         datasets_to_revise = head_results.get_datasets_to_revise()
         check.equal(
