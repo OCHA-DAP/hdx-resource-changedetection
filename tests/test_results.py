@@ -226,7 +226,9 @@ class TestResults:
         results = Results(today, results_input, broken_resources)
         results.process()
         change_output, broken_output = results.output()
-        check.equal(change_output, ["GONE|wontrevise  no hash|no size|no modified: 1a2b"])
+        check.equal(
+            change_output, ["GONE|wontrevise  no hash|no size|no modified: 1a2b"]
+        )
         check.equal(broken_output, ["GONE|wontrevise: 1a2b"])
         datasets_to_revise = results.get_datasets_to_revise()
         check.equal(
