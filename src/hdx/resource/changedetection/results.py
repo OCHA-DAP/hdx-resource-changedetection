@@ -43,20 +43,22 @@ class Results:
                     if status < -10:
                         dict_of_lists_add(self._change_output, status_str, resource_id)
                         if status < -100:
-                            revise_resource(
-                                self._datasets_to_revise,
-                                dataset_id,
-                                resource_id,
-                            )
+                            if not resource[7]:  # currently not broken
+                                revise_resource(
+                                    self._datasets_to_revise,
+                                    dataset_id,
+                                    resource_id,
+                                )
                             dict_of_lists_add(
                                 self._broken_output, status_str, resource_id
                             )
                         continue
                 else:
                     if status != HTTPStatus.TOO_MANY_REQUESTS:
-                        revise_resource(
-                            self._datasets_to_revise, dataset_id, resource_id
-                        )
+                        if not resource[7]:  # currently not broken
+                            revise_resource(
+                                self._datasets_to_revise, dataset_id, resource_id
+                            )
                     dict_of_lists_add(self._broken_output, status_str, resource_id)
             else:
                 status_str = None
