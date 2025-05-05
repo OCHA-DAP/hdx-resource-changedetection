@@ -28,8 +28,12 @@ class TestDatasetProcessor:
                 "data.humdata.org",
                 urlsplit(configuration.get_hdx_site_url()).netloc,
             }
-            dataset_processor = DatasetProcessor(configuration, netlocs_ignore)
+            formats_ignore = {"web app"}
+            dataset_processor = DatasetProcessor(
+                configuration, netlocs_ignore, formats_ignore
+            )
             datasets = dataset_processor.get_all_datasets()
+            assert len(datasets) == 14
             dataset_processor.process(datasets)
             resources_to_check = dataset_processor.get_distributed_resources_to_check()
             assert resources_to_check == [
@@ -41,15 +45,7 @@ class TestDatasetProcessor:
                     0,
                     datetime(2021, 4, 7, 1, 1, 13, tzinfo=timezone.utc),
                     "",
-                ),
-                (
-                    "http://drm.moha.gov.np/layers/",
-                    "e0ec0d4c-6664-4472-99d4-dbe1a5ec9d40",
-                    "web app",
-                    "95982e94-8567-491c-bee5-33e562f4897a",
-                    None,
-                    datetime(2015, 4, 29, 21, 54, 15, tzinfo=timezone.utc),
-                    "",
+                    False,
                 ),
                 (
                     "http://shapefiles.fews.net/west-africa201307.zip",
@@ -59,11 +55,11 @@ class TestDatasetProcessor:
                     None,
                     datetime(2015, 10, 14, 19, 5, 28, tzinfo=timezone.utc),
                     "",
+                    True,
                 ),
             ]
             netlocs = dataset_processor.get_netlocs()
             assert sorted(netlocs) == [
                 "drive.google.com",
-                "drm.moha.gov.np",
                 "shapefiles.fews.net",
             ]
