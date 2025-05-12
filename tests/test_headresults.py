@@ -15,8 +15,20 @@ class TestHeadResults:
             357102,
             datetime(2019, 11, 10, 8, 4, 26, tzinfo=timezone.utc),
             "1234",
+            False,
         )
         resources = {"1a2b": resource}
+        broken_resource = (
+            "https://test.com/myfile.xlsx",
+            "a8b51b81-1fa7-499d-a9f2-3d0bce06b5b5",
+            "xlsx",
+            "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5",
+            357102,
+            datetime(2019, 11, 10, 8, 4, 26, tzinfo=timezone.utc),
+            "1234",
+            True,
+        )
+        broken_resources = {"1a2b": broken_resource}
         result = [
             357102,
             "Sun, 10 Nov 2019 08:04:26 GMT",
@@ -56,6 +68,7 @@ class TestHeadResults:
                     357102,
                     datetime(2019, 11, 10, 8, 4, 26, tzinfo=timezone.utc),
                     "1234",
+                    False,
                 )
             ],
         )
@@ -154,6 +167,7 @@ class TestHeadResults:
                     357102,
                     datetime(2019, 11, 10, 8, 4, 26, tzinfo=timezone.utc),
                     "1234",
+                    False,
                 )
             ],
         )
@@ -179,6 +193,7 @@ class TestHeadResults:
                     357102,
                     datetime(2019, 11, 10, 8, 4, 26, tzinfo=timezone.utc),
                     "1234",
+                    False,
                 )
             ],
         )
@@ -204,6 +219,7 @@ class TestHeadResults:
                     357102,
                     datetime(2019, 11, 10, 8, 4, 26, tzinfo=timezone.utc),
                     "1234",
+                    False,
                 )
             ],
         )
@@ -247,20 +263,20 @@ class TestHeadResults:
         )
 
         result[3] = -101
-        head_results = HeadResults(results_input, resources)
+        head_results = HeadResults(results_input, broken_resources)
         head_results.process()
         change_output, broken_output, get_output = head_results.output()
-        check.equal(change_output, ["UNSPECIFIED SERVER ERROR: 1a2b"])
-        check.equal(broken_output, ["UNSPECIFIED SERVER ERROR: 1a2b"])
+        check.equal(change_output, ["UNSPECIFIED SERVER ERROR|wontrevise: 1a2b"])
+        check.equal(broken_output, ["UNSPECIFIED SERVER ERROR|wontrevise: 1a2b"])
         check.equal(get_output, [])
         datasets_to_revise = head_results.get_datasets_to_revise()
         check.equal(
             datasets_to_revise,
-            {
-                "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5": {
-                    "match": {"id": "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5"},
-                    "update__resources__1a2b": {"broken_link": True},
-                }
+            {  # resource already broken
+                # "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5": {
+                #     "match": {"id": "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5"},
+                #     "update__resources__1a2b": {"broken_link": True},
+                # }
             },
         )
         resources_to_get = head_results.get_distributed_resources_to_get()
@@ -298,6 +314,7 @@ class TestHeadResults:
             357103,
             datetime(2019, 11, 10, 8, 4, 27, tzinfo=timezone.utc),
             "1235",
+            False,
         )
         resources = {
             "1a2b": resource,
@@ -330,6 +347,7 @@ class TestHeadResults:
             None,
             None,
             "",
+            False,
         )
         resources = {"1a2b": resource2}
         result = [

@@ -16,8 +16,20 @@ class TestResults:
             357102,
             datetime(2019, 11, 10, 8, 4, 26, tzinfo=timezone.utc),
             "1234",
+            False,
         )
         resources = {"1a2b": resource}
+        broken_resource = (
+            "https://test.com/myfile.xlsx",
+            "a8b51b81-1fa7-499d-a9f2-3d0bce06b5b5",
+            "xlsx",
+            "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5",
+            357102,
+            datetime(2019, 11, 10, 8, 4, 26, tzinfo=timezone.utc),
+            "1234",
+            True,
+        )
+        broken_resources = {"1a2b": broken_resource}
         result = [
             357102,
             "Sun, 10 Nov 2019 08:04:26 GMT",
@@ -211,19 +223,21 @@ class TestResults:
         check.equal(datasets_to_revise, {})
 
         result[3] = 410
-        results = Results(today, results_input, resources)
+        results = Results(today, results_input, broken_resources)
         results.process()
         change_output, broken_output = results.output()
-        check.equal(change_output, ["GONE  no hash|no size|no modified: 1a2b"])
-        check.equal(broken_output, ["GONE: 1a2b"])
+        check.equal(
+            change_output, ["GONE|wontrevise  no hash|no size|no modified: 1a2b"]
+        )
+        check.equal(broken_output, ["GONE|wontrevise: 1a2b"])
         datasets_to_revise = results.get_datasets_to_revise()
         check.equal(
             datasets_to_revise,
-            {
-                "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5": {
-                    "match": {"id": "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5"},
-                    "update__resources__1a2b": {"broken_link": True},
-                }
+            {  # resource already broken
+                # "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5": {
+                #     "match": {"id": "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5"},
+                #     "update__resources__1a2b": {"broken_link": True},
+                # }
             },
         )
 
@@ -255,6 +269,7 @@ class TestResults:
             357102,
             None,
             "1234",
+            False,
         )
         resources = {"1a2b": resource}
         result = [

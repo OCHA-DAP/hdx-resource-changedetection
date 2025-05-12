@@ -13,12 +13,14 @@ class DatasetProcessor:
         self,
         configuration: Configuration,
         netlocs_ignore: Iterable[str] = (),
+        formats_ignore: Iterable[str] = (),
         task_code: Optional[str] = None,
     ):
         self._configuration = configuration
         self._netlocs = set()
         self._resources = {}
         self._netlocs_ignore = netlocs_ignore
+        self._formats_ignore = formats_ignore
         self._task_code = task_code
 
     def get_all_datasets(self) -> List[Dataset]:
@@ -39,17 +41,20 @@ class DatasetProcessor:
     def process(self, datasets: List[Dataset]) -> None:
         for dataset in datasets:
             for resource in dataset.get_resources():
+                resource_format = resource["format"]
+                if resource_format in self._formats_ignore:
+                    continue
                 url = resource["url"]
                 netloc = urlsplit(url).netloc
                 if netloc in self._netlocs_ignore:
                     continue
                 self._netlocs.add(netloc)
                 resource_id = resource["id"]
-                resource_format = resource["format"]
                 dataset_id = dataset["id"]
                 size = resource.get("size")
                 last_modified = parse_date(resource["last_modified"])
                 hash = resource.get("hash")
+                broken = resource.get("broken_link", False)
                 self._resources[resource_id] = (
                     url,
                     resource_id,
@@ -58,6 +63,7 @@ class DatasetProcessor:
                     size,
                     last_modified,
                     hash,
+                    broken,
                 )
 
     def get_resources(self) -> Dict[str, Tuple]:

@@ -73,8 +73,9 @@ def main(
                 "data.humdata.org",
                 urlsplit(configuration.get_hdx_site_url()).netloc,
             }
+            formats_ignore = {"web app"}
             dataset_processor = DatasetProcessor(
-                configuration, netlocs_ignore, task_code
+                configuration, netlocs_ignore, formats_ignore, task_code
             )
             datasets = dataset_processor.get_all_datasets()
             dataset_processor.process(datasets)

@@ -53,7 +53,12 @@ class HeadResults:
                     self._resources_to_get[resource_id] = resource
                     dict_of_lists_add(self._get_output, status_str, resource_id)
                 else:
-                    revise_resource(self._datasets_to_revise, dataset_id, resource_id)
+                    if resource[7]:  # currently broken
+                        status_str = f"{status_str}|wontrevise"
+                    else:
+                        revise_resource(
+                            self._datasets_to_revise, dataset_id, resource_id
+                        )
                     dict_of_lists_add(self._broken_output, status_str, resource_id)
                 dict_of_lists_add(self._change_output, status_str, resource_id)
                 continue
