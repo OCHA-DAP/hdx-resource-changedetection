@@ -14,15 +14,7 @@ class TestHeadRetrieve:
             "test",
             netlocs,
         ).retrieve(urls)
-        check.equal(
-            result["1"],
-            (
-                7956,
-                "Wed, 24 Aug 2022 17:22:01 GMT",
-                None,
-                200,
-            ),
-        )
+        check.equal(result["1"], (None, None, 'W/"cx4nhab5wy1nfr"', 200))
         check.equal(result["2"], (None, None, None, 404))
         check.equal(result["3"], (None, None, None, -101))
         check.equal(

@@ -38,7 +38,7 @@ def pytest_runtest_setup(item):
 
 @pytest.fixture(scope="session")
 def urls():
-    url1 = "https://acme.com"
+    url1 = "https://aliweb.com"
     url2 = "https://github.com/mcarans/hdx-data-freshness/raw/d1616d76c3b6b8ef5029eb6964b93cde688efd53/tests/fixtures/day0/notfound"  # 404 not found
     url3 = "file://lala:10"
     url4 = "https://ocha-dap.github.io/hdx-data-freshness/tests/fixtures/retrieve/COD_MOZ_Admin0.geojson"

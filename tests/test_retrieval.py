@@ -14,15 +14,7 @@ class TestRetrieve:
             "test",
             netlocs,
         ).retrieve(urls)
-        check.equal(
-            result["1"],
-            (
-                7956,
-                "Wed, 24 Aug 2022 17:22:01 GMT",
-                "b03a925ba6eaceedf11277b72b28035f",
-                0,
-            ),
-        )
+        check.equal(result["1"], (None, None, '"cx4nhab5wy1nfr"', 200))
         check.equal(result["2"], (None, None, None, 404))
         check.equal(result["3"], (None, None, None, -101))
         check.equal(
