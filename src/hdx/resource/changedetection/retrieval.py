@@ -99,9 +99,13 @@ class Retrieval:
                 )
                 raise exception
             headers = response.headers
-            http_size = headers.get("Content-Length")
-            if http_size:
-                http_size = int(http_size)
+            content_encoding = headers.get("Content-Encoding")
+            if content_encoding:
+                http_size = None
+            else:
+                http_size = headers.get("Content-Length")
+                if http_size:
+                    http_size = int(http_size)
             last_modified = headers.get("Last-Modified")
             etag = headers.get("Etag")
             if etag:
@@ -158,7 +162,7 @@ class Retrieval:
             if expected_signatures is not None:
                 if not any(signature[: len(x)] == x for x in expected_signatures):
                     return resource_id, size, last_modified, hash, -2
-            if size != http_size:
+            if http_size and size != http_size:
                 return resource_id, size, last_modified, hash, -3
 
             return resource_id, size, last_modified, hash, 0

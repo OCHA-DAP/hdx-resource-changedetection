@@ -41,7 +41,7 @@ class DatasetProcessor:
     def process(self, datasets: List[Dataset]) -> None:
         for dataset in datasets:
             for resource in dataset.get_resources():
-                resource_format = resource["format"]
+                resource_format = resource.get_format()
                 if resource_format in self._formats_ignore:
                     continue
                 url = resource["url"]
