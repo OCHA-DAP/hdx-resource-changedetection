@@ -38,10 +38,22 @@ class TestResults:
         ]
         results_input = {"1a2b": result}
         results = Results(today, results_input, resources)
-        results.process()
-        change_output, broken_output = results.output()
-        check.equal(change_output, ["nothing: 1a2b"])
-        check.equal(broken_output, [])
+        resource_status = {"1a2b": {}}
+        results.process(resource_status)
+        check.equal(
+            resource_status,
+            {
+                "1a2b": {
+                    "Get Status": "OK",
+                    "New ETag": "Y",
+                    "ETag Changed": "N",
+                    "New Size": "Y",
+                    "Size Changed": "N",
+                    "New Modified": "Y",
+                    "Modified Changed": "N",
+                }
+            },
+        )
         datasets_to_revise = results.get_datasets_to_revise()
         check.equal(datasets_to_revise, {})
 
@@ -49,10 +61,24 @@ class TestResults:
         # the resource last_modified so we populate it with today instead
         result[0] = 357103
         results = Results(today, results_input, resources)
-        results.process()
-        change_output, broken_output = results.output()
-        check.equal(change_output, ["size|today: 1a2b"])
-        check.equal(broken_output, [])
+        resource_status = {"1a2b": {}}
+        results.process(resource_status)
+        check.equal(
+            resource_status,
+            {
+                "1a2b": {
+                    "Get Status": "OK",
+                    "New ETag": "Y",
+                    "ETag Changed": "N",
+                    "New Size": "Y",
+                    "Size Changed": "Y",
+                    "New Modified": "Y",
+                    "Modified Changed": "N",
+                    "Modified Value": "today",
+                    "Update": "Y",
+                }
+            },
+        )
         datasets_to_revise = results.get_datasets_to_revise()
         check.equal(
             datasets_to_revise,
@@ -70,26 +96,65 @@ class TestResults:
         # today < resource date so don't change resource date
         today = datetime(2019, 11, 9, 8, 4, 27, tzinfo=timezone.utc)
         results = Results(today, results_input, resources)
-        results.process()
-        change_output, broken_output = results.output()
-        check.equal(change_output, ["size: 1a2b"])
-        check.equal(broken_output, [])
+        resource_status = {"1a2b": {}}
+        results.process(resource_status)
+        check.equal(
+            resource_status,
+            {
+                "1a2b": {
+                    "Get Status": "OK",
+                    "New ETag": "Y",
+                    "ETag Changed": "N",
+                    "New Size": "Y",
+                    "Size Changed": "Y",
+                    "New Modified": "Y",
+                    "Modified Changed": "N",
+                    "Update": "Y",
+                }
+            },
+        )
 
         today = datetime(2019, 11, 10, 8, 4, 27, tzinfo=timezone.utc)
         result[0] = 357102
         result[1] = "Sun, 10 Nov 2019 08:04:27 GMT"
         results = Results(today, results_input, resources)
-        results.process()
-        change_output, broken_output = results.output()
-        check.equal(change_output, ["modified: 1a2b"])
-        check.equal(broken_output, [])
+        resource_status = {"1a2b": {}}
+        results.process(resource_status)
+        check.equal(
+            resource_status,
+            {
+                "1a2b": {
+                    "Get Status": "OK",
+                    "New ETag": "Y",
+                    "ETag Changed": "N",
+                    "New Size": "Y",
+                    "Size Changed": "N",
+                    "New Modified": "Y",
+                    "Modified Changed": "Y",
+                    "Modified Newer": "Y",
+                }
+            },
+        )
 
         result[1] = "Sun, 10 Nov 2019 08:04:25 GMT"
         results = Results(today, results_input, resources)
-        results.process()
-        change_output, broken_output = results.output()
-        check.equal(change_output, ["modified http<resource: 1a2b"])
-        check.equal(broken_output, [])
+        resource_status = {"1a2b": {}}
+        results.process(resource_status)
+        check.equal(
+            resource_status,
+            {
+                "1a2b": {
+                    "Get Status": "OK",
+                    "New ETag": "Y",
+                    "ETag Changed": "N",
+                    "New Size": "Y",
+                    "Size Changed": "N",
+                    "New Modified": "Y",
+                    "Modified Changed": "Y",
+                    "Modified Newer": "N",
+                }
+            },
+        )
         datasets_to_revise = results.get_datasets_to_revise()
         check.equal(datasets_to_revise, {})
 
@@ -98,10 +163,24 @@ class TestResults:
         result[1] = "Sun, 10 Nov 2019 08:04:26 GMT"
         result[2] = "1235"
         results = Results(today, results_input, resources)
-        results.process()
-        change_output, broken_output = results.output()
-        check.equal(change_output, ["etag|today: 1a2b"])
-        check.equal(broken_output, [])
+        resource_status = {"1a2b": {}}
+        results.process(resource_status)
+        check.equal(
+            resource_status,
+            {
+                "1a2b": {
+                    "Get Status": "OK",
+                    "New ETag": "Y",
+                    "ETag Changed": "Y",
+                    "New Size": "Y",
+                    "Size Changed": "N",
+                    "New Modified": "Y",
+                    "Modified Changed": "N",
+                    "Modified Value": "today",
+                    "Update": "Y",
+                }
+            },
+        )
         datasets_to_revise = results.get_datasets_to_revise()
         check.equal(
             datasets_to_revise,
@@ -118,66 +197,172 @@ class TestResults:
 
         result[1] = "Sun, 10 Nov 2019 08:04:28 GMT"
         results = Results(today, results_input, resources)
-        results.process()
-        change_output, broken_output = results.output()
-        check.equal(change_output, ["etag|modified: 1a2b"])
-        check.equal(broken_output, [])
+        resource_status = {"1a2b": {}}
+        results.process(resource_status)
+        check.equal(
+            resource_status,
+            {
+                "1a2b": {
+                    "Get Status": "OK",
+                    "New ETag": "Y",
+                    "ETag Changed": "Y",
+                    "New Size": "Y",
+                    "Size Changed": "N",
+                    "New Modified": "Y",
+                    "Modified Changed": "Y",
+                    "Modified Newer": "Y",
+                    "Modified Value": "http",
+                    "Update": "Y",
+                }
+            },
+        )
 
         result[0] = 357103
         result[2] = "1234"
         results = Results(today, results_input, resources)
-        results.process()
-        change_output, broken_output = results.output()
-        check.equal(change_output, ["size|modified: 1a2b"])
-        check.equal(broken_output, [])
+        resource_status = {"1a2b": {}}
+        results.process(resource_status)
+        check.equal(
+            resource_status,
+            {
+                "1a2b": {
+                    "Get Status": "OK",
+                    "New ETag": "Y",
+                    "ETag Changed": "N",
+                    "New Size": "Y",
+                    "Size Changed": "Y",
+                    "New Modified": "Y",
+                    "Modified Changed": "Y",
+                    "Modified Newer": "Y",
+                    "Modified Value": "http",
+                    "Update": "Y",
+                }
+            },
+        )
 
         result[0] = None
         results = Results(today, results_input, resources)
-        results.process()
-        change_output, broken_output = results.output()
-        check.equal(change_output, ["no size|modified: 1a2b"])
-        check.equal(broken_output, [])
+        resource_status = {"1a2b": {}}
+        results.process(resource_status)
+        check.equal(
+            resource_status,
+            {
+                "1a2b": {
+                    "Get Status": "OK",
+                    "New ETag": "Y",
+                    "ETag Changed": "N",
+                    "New Size": "N",
+                    "Size Changed": "Y",
+                    "New Modified": "Y",
+                    "Modified Changed": "Y",
+                    "Modified Newer": "Y",
+                }
+            },
+        )
 
         result[2] = None
         results = Results(today, results_input, resources)
-        results.process()
-        change_output, broken_output = results.output()
-        check.equal(change_output, ["no etag|no size|modified: 1a2b"])
-        check.equal(broken_output, [])
+        resource_status = {"1a2b": {}}
+        results.process(resource_status)
+        check.equal(
+            resource_status,
+            {
+                "1a2b": {
+                    "Get Status": "OK",
+                    "New ETag": "N",
+                    "ETag Changed": "Y",
+                    "New Size": "N",
+                    "Size Changed": "Y",
+                    "New Modified": "Y",
+                    "Modified Changed": "Y",
+                    "Modified Newer": "Y",
+                }
+            },
+        )
 
         result[1] = None
         results = Results(today, results_input, resources)
-        results.process()
-        change_output, broken_output = results.output()
-        check.equal(change_output, ["no etag|no size|no modified: 1a2b"])
-        check.equal(broken_output, [])
+        resource_status = {"1a2b": {}}
+        results.process(resource_status)
+        check.equal(
+            resource_status,
+            {
+                "1a2b": {
+                    "Get Status": "OK",
+                    "New ETag": "N",
+                    "ETag Changed": "Y",
+                    "New Size": "N",
+                    "Size Changed": "Y",
+                    "New Modified": "N",
+                    "Modified Changed": "Y",
+                }
+            },
+        )
         datasets_to_revise = results.get_datasets_to_revise()
         check.equal(datasets_to_revise, {})
 
         result[3] = 0
         results = Results(today, results_input, resources)
-        results.process()
-        change_output, broken_output = results.output()
-        check.equal(change_output, ["no hash|no size|no modified: 1a2b"])
-        check.equal(broken_output, [])
+        resource_status = {"1a2b": {}}
+        results.process(resource_status)
+        check.equal(
+            resource_status,
+            {
+                "1a2b": {
+                    "Get Status": "OK",
+                    "New Hash": "N",
+                    "Hash Changed": "Y",
+                    "New Size": "N",
+                    "Size Changed": "Y",
+                    "New Modified": "N",
+                    "Modified Changed": "Y",
+                }
+            },
+        )
         datasets_to_revise = results.get_datasets_to_revise()
         check.equal(datasets_to_revise, {})
 
         result[2] = "1234"
         results = Results(today, results_input, resources)
-        results.process()
-        change_output, broken_output = results.output()
-        check.equal(change_output, ["no size|no modified: 1a2b"])
-        check.equal(broken_output, [])
+        resource_status = {"1a2b": {}}
+        results.process(resource_status)
+        check.equal(
+            resource_status,
+            {
+                "1a2b": {
+                    "Get Status": "OK",
+                    "New Hash": "Y",
+                    "Hash Changed": "N",
+                    "New Size": "N",
+                    "Size Changed": "Y",
+                    "New Modified": "N",
+                    "Modified Changed": "Y",
+                }
+            },
+        )
 
         # The hash has changed and there is no http modified so we use today as
         # modified
         result[2] = "1235"
         results = Results(today, results_input, resources)
-        results.process()
-        change_output, broken_output = results.output()
-        check.equal(change_output, ["hash|no size|no modified|today: 1a2b"])
-        check.equal(broken_output, [])
+        resource_status = {"1a2b": {}}
+        results.process(resource_status)
+        check.equal(
+            resource_status,
+            {
+                "1a2b": {
+                    "Get Status": "OK",
+                    "New Hash": "Y",
+                    "Hash Changed": "Y",
+                    "New Size": "N",
+                    "Size Changed": "Y",
+                    "New Modified": "N",
+                    "Modified Changed": "Y",
+                    "Modified Value": "today",
+                    "Update": "Y",
+                }
+            },
+        )
         datasets_to_revise = results.get_datasets_to_revise()
         check.equal(
             datasets_to_revise,
@@ -195,10 +380,23 @@ class TestResults:
         result[2] = None
         result[3] = 403
         results = Results(today, results_input, resources)
-        results.process()
-        change_output, broken_output = results.output()
-        check.equal(change_output, ["FORBIDDEN  no hash|no size|no modified: 1a2b"])
-        check.equal(broken_output, ["FORBIDDEN: 1a2b"])
+        resource_status = {"1a2b": {}}
+        results.process(resource_status)
+        check.equal(
+            resource_status,
+            {
+                "1a2b": {
+                    "Get Status": "FORBIDDEN",
+                    "Set Broken": "Y",
+                    "New Hash": "N",
+                    "Hash Changed": "Y",
+                    "New Size": "N",
+                    "Size Changed": "Y",
+                    "New Modified": "N",
+                    "Modified Changed": "Y",
+                }
+            },
+        )
         datasets_to_revise = results.get_datasets_to_revise()
         check.equal(
             datasets_to_revise,
@@ -212,24 +410,43 @@ class TestResults:
 
         result[3] = 429
         results = Results(today, results_input, resources)
-        results.process()
-        change_output, broken_output = results.output()
+        resource_status = {"1a2b": {}}
+        results.process(resource_status)
         check.equal(
-            change_output,
-            ["TOO_MANY_REQUESTS  no hash|no size|no modified: 1a2b"],
+            resource_status,
+            {
+                "1a2b": {
+                    "Get Status": "TOO_MANY_REQUESTS",
+                    "New Hash": "N",
+                    "Hash Changed": "Y",
+                    "New Size": "N",
+                    "Size Changed": "Y",
+                    "New Modified": "N",
+                    "Modified Changed": "Y",
+                }
+            },
         )
-        check.equal(broken_output, ["TOO_MANY_REQUESTS: 1a2b"])
         datasets_to_revise = results.get_datasets_to_revise()
         check.equal(datasets_to_revise, {})
 
         result[3] = 410
         results = Results(today, results_input, broken_resources)
-        results.process()
-        change_output, broken_output = results.output()
+        resource_status = {"1a2b": {}}
+        results.process(resource_status)
         check.equal(
-            change_output, ["GONE|wontrevise  no hash|no size|no modified: 1a2b"]
+            resource_status,
+            {
+                "1a2b": {
+                    "Get Status": "GONE",
+                    "New Hash": "N",
+                    "Hash Changed": "Y",
+                    "New Size": "N",
+                    "Size Changed": "Y",
+                    "New Modified": "N",
+                    "Modified Changed": "Y",
+                }
+            },
         )
-        check.equal(broken_output, ["GONE|wontrevise: 1a2b"])
         datasets_to_revise = results.get_datasets_to_revise()
         check.equal(
             datasets_to_revise,
@@ -243,13 +460,23 @@ class TestResults:
 
         result[3] = 504
         results = Results(today, results_input, resources)
-        results.process()
-        change_output, broken_output = results.output()
+        resource_status = {"1a2b": {}}
+        results.process(resource_status)
         check.equal(
-            change_output,
-            ["GATEWAY_TIMEOUT  no hash|no size|no modified: 1a2b"],
+            resource_status,
+            {
+                "1a2b": {
+                    "Get Status": "GATEWAY_TIMEOUT",
+                    "Set Broken": "Y",
+                    "New Hash": "N",
+                    "Hash Changed": "Y",
+                    "New Size": "N",
+                    "Size Changed": "Y",
+                    "New Modified": "N",
+                    "Modified Changed": "Y",
+                }
+            },
         )
-        check.equal(broken_output, ["GATEWAY_TIMEOUT: 1a2b"])
         datasets_to_revise = results.get_datasets_to_revise()
         check.equal(
             datasets_to_revise,
@@ -283,10 +510,24 @@ class TestResults:
         # today as modified.
         results_input = {"1a2b": result}
         results = Results(today, results_input, resources)
-        results.process()
-        change_output, broken_output = results.output()
-        check.equal(change_output, ["etag|today: 1a2b"])
-        check.equal(broken_output, [])
+        resource_status = {"1a2b": {}}
+        results.process(resource_status)
+        check.equal(
+            resource_status,
+            {
+                "1a2b": {
+                    "Get Status": "OK",
+                    "New ETag": "Y",
+                    "ETag Changed": "Y",
+                    "New Size": "Y",
+                    "Size Changed": "N",
+                    "New Modified": "N",
+                    "Modified Changed": "N",
+                    "Modified Value": "today",
+                    "Update": "Y",
+                }
+            },
+        )
         datasets_to_revise = results.get_datasets_to_revise()
         check.equal(
             datasets_to_revise,
@@ -305,10 +546,25 @@ class TestResults:
         # has changed. Don't use today as we have a new http modified value.
         result[1] = "Sun, 10 Nov 2019 08:04:26 GMT"
         results = Results(today, results_input, resources)
-        results.process()
-        change_output, broken_output = results.output()
-        check.equal(change_output, ["etag|modified: 1a2b"])
-        check.equal(broken_output, [])
+        resource_status = {"1a2b": {}}
+        results.process(resource_status)
+        check.equal(
+            resource_status,
+            {
+                "1a2b": {
+                    "Get Status": "OK",
+                    "New ETag": "Y",
+                    "ETag Changed": "Y",
+                    "New Size": "Y",
+                    "Size Changed": "N",
+                    "New Modified": "Y",
+                    "Modified Changed": "Y",
+                    "Modified Newer": "Y",
+                    "Modified Value": "http",
+                    "Update": "Y",
+                }
+            },
+        )
         datasets_to_revise = results.get_datasets_to_revise()
         check.equal(
             datasets_to_revise,
@@ -325,10 +581,23 @@ class TestResults:
 
         result[2] = "1234"
         results = Results(today, results_input, resources)
-        results.process()
-        change_output, broken_output = results.output()
-        check.equal(change_output, ["modified: 1a2b"])
-        check.equal(broken_output, [])
+        resource_status = {"1a2b": {}}
+        results.process(resource_status)
+        check.equal(
+            resource_status,
+            {
+                "1a2b": {
+                    "Get Status": "OK",
+                    "New ETag": "Y",
+                    "ETag Changed": "N",
+                    "New Size": "Y",
+                    "Size Changed": "N",
+                    "New Modified": "Y",
+                    "Modified Changed": "Y",
+                    "Modified Newer": "Y",
+                }
+            },
+        )
         datasets_to_revise = results.get_datasets_to_revise()
         check.equal(
             datasets_to_revise,
@@ -344,10 +613,12 @@ class TestResults:
 
         result[3] = -101
         results = Results(today, results_input, resources)
-        results.process()
-        change_output, broken_output = results.output()
-        check.equal(change_output, ["UNSPECIFIED SERVER ERROR: 1a2b"])
-        check.equal(broken_output, ["UNSPECIFIED SERVER ERROR: 1a2b"])
+        resource_status = {"1a2b": {}}
+        results.process(resource_status)
+        check.equal(
+            resource_status,
+            {"1a2b": {"Get Status": "UNSPECIFIED SERVER ERROR", "Set Broken": "Y"}},
+        )
         datasets_to_revise = results.get_datasets_to_revise()
         check.equal(
             datasets_to_revise,
@@ -361,19 +632,31 @@ class TestResults:
 
         result[3] = -11
         results = Results(today, results_input, resources)
-        results.process()
-        change_output, broken_output = results.output()
-        check.equal(change_output, ["TOO LARGE TO HASH: 1a2b"])
-        check.equal(broken_output, [])
+        resource_status = {"1a2b": {}}
+        results.process(resource_status)
+        check.equal(resource_status, {"1a2b": {"Get Status": "TOO LARGE TO HASH"}})
         datasets_to_revise = results.get_datasets_to_revise()
         check.equal(datasets_to_revise, {})
 
         result[3] = -1
         results = Results(today, results_input, resources)
-        results.process()
-        change_output, broken_output = results.output()
-        check.equal(change_output, ["MIMETYPE != HDX FORMAT  modified: 1a2b"])
-        check.equal(broken_output, [])
+        resource_status = {"1a2b": {}}
+        results.process(resource_status)
+        check.equal(
+            resource_status,
+            {
+                "1a2b": {
+                    "Get Status": "MIMETYPE != HDX FORMAT",
+                    "New Hash": "Y",
+                    "Hash Changed": "N",
+                    "New Size": "Y",
+                    "Size Changed": "N",
+                    "New Modified": "Y",
+                    "Modified Changed": "Y",
+                    "Modified Newer": "Y",
+                }
+            },
+        )
         datasets_to_revise = results.get_datasets_to_revise()
         check.equal(
             datasets_to_revise,
@@ -390,10 +673,25 @@ class TestResults:
         result[2] = "1235"
         result[3] = -2
         results = Results(today, results_input, resources)
-        results.process()
-        change_output, broken_output = results.output()
-        check.equal(change_output, ["SIGNATURE != HDX FORMAT  hash|modified: 1a2b"])
-        check.equal(broken_output, [])
+        resource_status = {"1a2b": {}}
+        results.process(resource_status)
+        check.equal(
+            resource_status,
+            {
+                "1a2b": {
+                    "Get Status": "SIGNATURE != HDX FORMAT",
+                    "New Hash": "Y",
+                    "Hash Changed": "Y",
+                    "New Size": "Y",
+                    "Size Changed": "N",
+                    "New Modified": "Y",
+                    "Modified Changed": "Y",
+                    "Modified Newer": "Y",
+                    "Modified Value": "http",
+                    "Update": "Y",
+                }
+            },
+        )
         datasets_to_revise = results.get_datasets_to_revise()
         check.equal(
             datasets_to_revise,
@@ -411,10 +709,25 @@ class TestResults:
         result[0] = 357103
         result[3] = -3
         results = Results(today, results_input, resources)
-        results.process()
-        change_output, broken_output = results.output()
-        check.equal(change_output, ["SIZE != HTTP SIZE  hash|size|modified: 1a2b"])
-        check.equal(broken_output, [])
+        resource_status = {"1a2b": {}}
+        results.process(resource_status)
+        check.equal(
+            resource_status,
+            {
+                "1a2b": {
+                    "Get Status": "SIZE != HTTP SIZE",
+                    "New Hash": "Y",
+                    "Hash Changed": "Y",
+                    "New Size": "Y",
+                    "Size Changed": "Y",
+                    "New Modified": "Y",
+                    "Modified Changed": "Y",
+                    "Modified Newer": "Y",
+                    "Modified Value": "http",
+                    "Update": "Y",
+                }
+            },
+        )
         datasets_to_revise = results.get_datasets_to_revise()
         check.equal(
             datasets_to_revise,
@@ -448,13 +761,92 @@ class TestResults:
             "1a7b": result,
         }
         results = Results(today, results_input, resources)
-        results.process()
-        change_output, broken_output = results.output()
+        resource_status = {
+            "1a2b": {},
+            "1a3b": {},
+            "1a4b": {},
+            "1a5b": {},
+            "1a6b": {},
+            "1a7b": {},
+        }
+        results.process(resource_status)
         check.equal(
-            change_output,
-            ["SIGNATURE != HDX FORMAT  hash|size|modified: 6"],
+            resource_status,
+            {
+                "1a2b": {
+                    "Get Status": "SIGNATURE != HDX FORMAT",
+                    "New Hash": "Y",
+                    "Hash Changed": "Y",
+                    "New Size": "Y",
+                    "Size Changed": "Y",
+                    "New Modified": "Y",
+                    "Modified Changed": "Y",
+                    "Modified Newer": "Y",
+                    "Modified Value": "http",
+                    "Update": "Y",
+                },
+                "1a3b": {
+                    "Get Status": "SIGNATURE != HDX FORMAT",
+                    "New Hash": "Y",
+                    "Hash Changed": "Y",
+                    "New Size": "Y",
+                    "Size Changed": "Y",
+                    "New Modified": "Y",
+                    "Modified Changed": "Y",
+                    "Modified Newer": "Y",
+                    "Modified Value": "http",
+                    "Update": "Y",
+                },
+                "1a4b": {
+                    "Get Status": "SIGNATURE != HDX FORMAT",
+                    "New Hash": "Y",
+                    "Hash Changed": "Y",
+                    "New Size": "Y",
+                    "Size Changed": "Y",
+                    "New Modified": "Y",
+                    "Modified Changed": "Y",
+                    "Modified Newer": "Y",
+                    "Modified Value": "http",
+                    "Update": "Y",
+                },
+                "1a5b": {
+                    "Get Status": "SIGNATURE != HDX FORMAT",
+                    "New Hash": "Y",
+                    "Hash Changed": "Y",
+                    "New Size": "Y",
+                    "Size Changed": "Y",
+                    "New Modified": "Y",
+                    "Modified Changed": "Y",
+                    "Modified Newer": "Y",
+                    "Modified Value": "http",
+                    "Update": "Y",
+                },
+                "1a6b": {
+                    "Get Status": "SIGNATURE != HDX FORMAT",
+                    "New Hash": "Y",
+                    "Hash Changed": "Y",
+                    "New Size": "Y",
+                    "Size Changed": "Y",
+                    "New Modified": "Y",
+                    "Modified Changed": "Y",
+                    "Modified Newer": "Y",
+                    "Modified Value": "http",
+                    "Update": "Y",
+                },
+                "1a7b": {
+                    "Get Status": "SIGNATURE != HDX FORMAT",
+                    "New Hash": "Y",
+                    "Hash Changed": "Y",
+                    "New Size": "Y",
+                    "Size Changed": "Y",
+                    "New Modified": "Y",
+                    "Modified Changed": "Y",
+                    "Modified Newer": "Y",
+                    "Modified Value": "http",
+                    "Update": "Y",
+                },
+            },
         )
-        check.equal(broken_output, [])
         datasets_to_revise = results.get_datasets_to_revise()
         check.equal(
             datasets_to_revise,
@@ -513,16 +905,86 @@ class TestResults:
             "1a7b": resource2,
         }
         results = Results(today, results_input, resources)
-        results.process()
-        change_output, broken_output = results.output()
+        resource_status = {
+            "1a2b": {},
+            "1a3b": {},
+            "1a4b": {},
+            "1a5b": {},
+            "1a6b": {},
+            "1a7b": {},
+        }
+        results.process(resource_status)
         check.equal(
-            change_output,
-            [
-                "SIGNATURE != HDX FORMAT  hash|size|modified: 1a2b, 1a3b, 1a4b",
-                "SIGNATURE != HDX FORMAT  modified http<resource: 1a5b, 1a6b, 1a7b",
-            ],
+            resource_status,
+            {
+                "1a2b": {
+                    "Get Status": "SIGNATURE != HDX FORMAT",
+                    "New Hash": "Y",
+                    "Hash Changed": "Y",
+                    "New Size": "Y",
+                    "Size Changed": "Y",
+                    "New Modified": "Y",
+                    "Modified Changed": "Y",
+                    "Modified Newer": "Y",
+                    "Modified Value": "http",
+                    "Update": "Y",
+                },
+                "1a3b": {
+                    "Get Status": "SIGNATURE != HDX FORMAT",
+                    "New Hash": "Y",
+                    "Hash Changed": "Y",
+                    "New Size": "Y",
+                    "Size Changed": "Y",
+                    "New Modified": "Y",
+                    "Modified Changed": "Y",
+                    "Modified Newer": "Y",
+                    "Modified Value": "http",
+                    "Update": "Y",
+                },
+                "1a4b": {
+                    "Get Status": "SIGNATURE != HDX FORMAT",
+                    "New Hash": "Y",
+                    "Hash Changed": "Y",
+                    "New Size": "Y",
+                    "Size Changed": "Y",
+                    "New Modified": "Y",
+                    "Modified Changed": "Y",
+                    "Modified Newer": "Y",
+                    "Modified Value": "http",
+                    "Update": "Y",
+                },
+                "1a5b": {
+                    "Get Status": "SIGNATURE != HDX FORMAT",
+                    "New Hash": "Y",
+                    "Hash Changed": "N",
+                    "New Size": "Y",
+                    "Size Changed": "N",
+                    "New Modified": "Y",
+                    "Modified Changed": "Y",
+                    "Modified Newer": "N",
+                },
+                "1a6b": {
+                    "Get Status": "SIGNATURE != HDX FORMAT",
+                    "New Hash": "Y",
+                    "Hash Changed": "N",
+                    "New Size": "Y",
+                    "Size Changed": "N",
+                    "New Modified": "Y",
+                    "Modified Changed": "Y",
+                    "Modified Newer": "N",
+                },
+                "1a7b": {
+                    "Get Status": "SIGNATURE != HDX FORMAT",
+                    "New Hash": "Y",
+                    "Hash Changed": "N",
+                    "New Size": "Y",
+                    "Size Changed": "N",
+                    "New Modified": "Y",
+                    "Modified Changed": "Y",
+                    "Modified Newer": "N",
+                },
+            },
         )
-        check.equal(broken_output, [])
         datasets_to_revise = results.get_datasets_to_revise()
         check.equal(
             datasets_to_revise,

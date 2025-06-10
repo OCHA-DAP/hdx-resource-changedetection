@@ -17,9 +17,9 @@ class TestHeadRetrieve:
         check.equal(
             result["1"],
             (
-                859,
-                "Sat, 20 Dec 2014 12:44:12 GMT",
-                '"35b-50aa52ea9f4dc"',
+                7956,
+                "Wed, 24 Aug 2022 17:22:01 GMT",
+                None,
                 200,
             ),
         )
@@ -28,22 +28,22 @@ class TestHeadRetrieve:
         check.equal(
             result["4"],
             (
-                176643,
-                "Tue, 12 Mar 2024 03:15:06 GMT",
-                'W/"65efc8ba-91a08"',
+                None,
+                "Mon, 19 May 2025 23:55:10 GMT",
+                'W/"682bc4de-91a08"',
                 200,
             ),
         )
         check.equal(
             result["5"],
-            (8461, "Tue, 12 Mar 2024 03:15:06 GMT", '"65efc8ba-210d"', 200),
+            (8461, "Mon, 19 May 2025 23:55:10 GMT", '"682bc4de-210d"', 200),
         )
         check.equal(
             result["6"],
             (
-                11169,
-                "Tue, 12 Mar 2024 03:15:06 GMT",
-                'W/"65efc8ba-65e4"',
+                None,
+                "Mon, 19 May 2025 23:55:10 GMT",
+                'W/"682bc4de-65e4"',
                 200,
             ),
         )
@@ -51,26 +51,26 @@ class TestHeadRetrieve:
             result["7"],
             (
                 81920,
-                "Tue, 12 Mar 2024 03:15:06 GMT",
-                '"65efc8ba-14000"',
+                "Mon, 19 May 2025 23:55:10 GMT",
+                '"682bc4de-14000"',
                 200,
             ),
         )
         check.equal(
             result["8"],
-            (20984, "Tue, 12 Mar 2024 03:15:06 GMT", '"65efc8ba-51f8"', 200),
+            (20984, "Mon, 19 May 2025 23:55:10 GMT", '"682bc4de-51f8"', 200),
         )
         check.equal(
             result["9"],
-            (871, "Tue, 12 Mar 2024 03:15:06 GMT", 'W/"65efc8ba-7e1"', 200),
+            (None, "Mon, 19 May 2025 23:55:10 GMT", 'W/"682bc4de-7e1"', 200),
         )
         check.equal(
             result["10"],
-            (871, "Tue, 12 Mar 2024 03:15:06 GMT", 'W/"65efc8ba-7e1"', 200),
+            (None, "Mon, 19 May 2025 23:55:10 GMT", 'W/"682bc4de-7e1"', 200),
         )
         check.equal(
             result["11"],
-            (871, "Tue, 12 Mar 2024 03:15:06 GMT", 'W/"65efc8ba-7e1"', 200),
+            (None, "Mon, 19 May 2025 23:55:10 GMT", 'W/"682bc4de-7e1"', 200),
         )
         check.equal(
             result["12"],

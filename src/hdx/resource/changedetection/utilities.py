@@ -1,14 +1,18 @@
 import logging
 from http import HTTPStatus
-from typing import Dict, List
+from typing import Dict
 
 import aiohttp
+from prettytable import PrettyTable
+
+from hdx.utilities.dictandlist import write_list_to_csv
 
 logger = logging.getLogger(__name__)
 
 status_lookup = {i.value: i.name for i in HTTPStatus}
 status_lookup.update(
     {
+        0: "OK",
         -1: "MIMETYPE != HDX FORMAT",
         -2: "SIGNATURE != HDX FORMAT",
         -3: "SIZE != HTTP SIZE",
@@ -18,19 +22,52 @@ status_lookup.update(
 )
 
 
-def log_output(status_to_resourceids: Dict) -> List[str]:
-    output = []
-    for status in sorted(status_to_resourceids):
-        resource_ids = status_to_resourceids[status]
-        count = len(resource_ids)
-        if count < 5:
-            resource_ids = ", ".join(resource_ids)
-            output_str = f"{status}: {resource_ids}"
-        else:
-            output_str = f"{status}: {count}"
-        logger.info(output_str)
-        output.append(output_str)
-    return output
+def get_blank_log_status() -> Dict[str, str]:
+    return {
+        "Existing Hash": "",
+        "Existing Modified": "",
+        "Existing Size": "",
+        "Existing Broken": "",
+        "Set Broken": "N",
+        "Head Status": "",
+        "Head Error": "",
+        "Get Status": "",
+        "Get Error": "",
+        "New ETag": "",
+        "ETag Changed": "",
+        "New Modified": "",
+        "Modified Changed": "",
+        "Modified Newer": "",
+        "Modified Value": "",
+        "New Size": "",
+        "Size Changed": "",
+        "New Hash": "",
+        "Hash Changed": "",
+        "Update": "N",
+    }
+
+
+def get_status_count(resource_status: Dict[str, str]) -> Dict[str, int]:
+    status_count = {}
+    for resource_id, status in resource_status.items():
+        key = tuple(status.values())
+        status_count[key] = status_count.get(key, 0) + 1
+    return status_count
+
+
+def output_status_count(status_count: Dict[str, int], path: str) -> None:
+    log_status = get_blank_log_status()
+    table = PrettyTable()
+    headers = list(log_status.keys()) + ["Number"]
+    rows = [headers]
+    table.field_names = headers
+    for key in sorted(status_count):
+        row = list(key) + [status_count[key]]
+        table.add_row(row)
+        rows.append(row)
+    print(table)
+    if path:
+        write_list_to_csv(path, rows)
 
 
 def is_server_error(ex: BaseException) -> bool:

@@ -10,10 +10,10 @@ This script detects changes to resources on HDX.
 
 ### Environment
 
-Development is currently done using Python 3.12. We recommend using a virtual
+Development is currently done using Python 3.13. We recommend using a virtual
 environment such as ``venv``:
 
-    python3.12 -m venv venv
+    python3.13 -m venv venv
     source venv/bin/activate
 
 In your virtual environment, please install all packages for
