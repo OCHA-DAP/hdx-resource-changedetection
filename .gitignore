@@ -165,3 +165,8 @@ _version.py
 
 #OS Files
 *DS_Store
+
+# Projet specific files that should be ignored
+.useragents.yaml
+.hdx_configuration.yaml
+saved_data/
