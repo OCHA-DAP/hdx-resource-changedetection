@@ -14,4 +14,4 @@ RUN apk add --no-cache gettext-envsubst && \
 
 ENTRYPOINT [ "/entrypoint.sh" ]
 
-CMD ["print('HDX Resource Change Detection')"]
+CMD ["-c", "print('HDX Resource Change Detection')"]
