@@ -14,7 +14,7 @@ RUN apk add --no-cache gettext-envsubst && \
     python -m venv .tmpenv && \
     source .tmpenv/bin/activate && \
     pip install hatch && \
-    hatch build --no-build-isolation && \
+    hatch build && \
     deactivate && \
     rm -rf ./.tmpenv &&\
     apk del .build-deps && \
