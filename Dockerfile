@@ -9,6 +9,15 @@ COPY docker/entrypoint.sh /
 RUN apk add --no-cache gettext-envsubst && \
     mkdir -p /var/log/hdx-resource-changedetection && \
     pip3 install --no-cache-dir --upgrade -r requirements.txt && \
+    apk add --virtual .build-deps \
+     git && \
+    python -m venv .tmpenv && \
+    source .tmpenv/bin/activate && \
+    pip install hatch && \
+    hatch build --no-build-isolation && \
+    deactivate && \
+    rm -rf ./.tmpenv &&\
+    apk del .build-deps && \
     rm -rf /var/lib/apk/* && rm -r /root/.cache && \
     chmod +x /entrypoint.sh
 
