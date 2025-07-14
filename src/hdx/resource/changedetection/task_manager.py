@@ -19,7 +19,14 @@ class TaskManager:
             "redis://localhost:6379/0?decode_responses=True",
         )
         self.instance_id: str = str(uuid.uuid4())
-        self.redis_client: redis.Redis = redis.from_url(redis_url)
+        self.redis_client: redis.Redis = redis.from_url(
+            redis_url,
+            socket_connect_timeout=5,
+            socket_timeout=5,
+            retry_on_timeout=True,
+            health_check_interval=30, 
+            max_connections=5
+        )
         self.tasks: List[str] = self.generate_tasks(task_length)
         self._event_loop = asyncio.new_event_loop()
 
