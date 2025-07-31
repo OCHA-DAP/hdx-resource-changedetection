@@ -7,6 +7,7 @@ import uuid
 from typing import Dict, List, Optional
 
 import redis.asyncio as redis
+from redis.exceptions import WatchError
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -36,80 +37,125 @@ class TaskManager:
         return [f"{i:0{task_length}x}" for i in range(16**task_length)]
 
     async def acquire_task(self) -> Optional[str]:
-        """Try to acquire a task. Returns the hex code if successful."""
+        """Try to acquire a task atomically using WATCH/MULTI/EXEC. Returns the hex code if successful."""
         now = int(time.time())
         for task in self.tasks:
             key = f"task:{task}"
-            task_data = await self.redis_client.hgetall(key)
-            start_time = int(task_data.get("start_time", 0))
-            finish_time = task_data.get("finish_time")
-            lock_owner = task_data.get("lock")
-            last_progress_time = int(task_data.get("last_progress_time", 0))
-
-            if finish_time:
-                continue
-
-            # If no one holds the task, or lock is old, we take it
-            if not lock_owner:
+            
+            try:
+                # Use WATCH/MULTI/EXEC for atomic task acquisition
+                # Create pipeline and watch the key
                 pipeline = self.redis_client.pipeline()
-                pipeline.hset(
-                    key,
-                    mapping={
+                await pipeline.watch(key)
+                task_data = await self.redis_client.hgetall(key)
+                start_time = int(task_data.get("start_time", 0))
+                finish_time = int(task_data.get("finish_time", 0))
+                lock_owner = task_data.get("lock")
+                # last_progress_time = int(task_data.get("last_progress_time", 0))
+
+                # Skip tasks finished within the last day, but allow reprocessing of older finished tasks
+                if finish_time > 0 and now - finish_time < 24 * 60 * 60:
+                    await pipeline.unwatch()  # Clean up watch
+                    continue
+
+                # Determine if we can acquire this task
+                can_acquire = False
+                mapping = {}
+                log_message = ""
+
+                # If no one holds the task, we can take it
+                if not lock_owner:
+                    can_acquire = True
+                    mapping = {
                         "lock": self.instance_id,
                         "start_time": now,
                         "last_progress_time": now,
-                    },
-                )
-                await pipeline.execute()
-                logger.info(f"Instance {self.instance_id} acquired task {task}")
-                return task
+                    }
+                    log_message = f"Instance {self.instance_id} acquired task {task}"
 
-            # Check if task started more than 1 day ago
-            if now - start_time > 24 * 60 * 60:
-                pipeline = self.redis_client.pipeline()
-                pipeline.hset(
-                    key,
-                    mapping={
+                # Check if task started more than 1 day ago (stale task)
+                elif now - start_time > 24 * 60 * 60:
+                    can_acquire = True
+                    mapping = {
                         "lock": self.instance_id,
                         "start_time": now,
                         "last_progress_time": now,
-                    },
-                )
-                await pipeline.execute()
-                logger.info(f"Instance {self.instance_id} stole stale task {task}")
-                return task
+                    }
+                    log_message = f"Instance {self.instance_id} stole stale task {task}"
 
-            # Check if progress is stale (>2h)
-            if now - last_progress_time > 2 * 3600:
-                pipeline = self.redis_client.pipeline()
-                # Keep the original start_time for continuity
-                pipeline.hset(
-                    key,
-                    mapping={
-                        "lock": self.instance_id,
-                        "last_progress_time": now,
-                    },
-                )
-                await pipeline.execute()
-                logger.info(
-                    f"Instance {self.instance_id} took over task {task} due to stale progress"
-                )
-                return task
+                # Check if progress is stale (>2h)
+                # elif now - last_progress_time > 2 * 3600:
+                #     can_acquire = True
+                #     mapping = {
+                #         "lock": self.instance_id,
+                #         "last_progress_time": now,
+                #     }
+                #     log_message = f"Instance {self.instance_id} took over task {task} due to stale progress"
+
+                if can_acquire:
+                    # Start atomic transaction using the same pipeline
+                    pipeline.multi()
+                    pipeline.hset(key, mapping=mapping)
+                    pipeline.expire(key, 7 * 24 * 60 * 60)  # Set TTL to 1 week
+                    result = await pipeline.execute()
+                    
+                    # Successfully acquired the task atomically
+                    logger.info(log_message)
+                    return task
+                else:
+                    # Task is not available, clean up watch and continue
+                    await pipeline.unwatch()
+
+            except WatchError:
+                # Transaction was aborted due to concurrent modification
+                logger.warning(f"Transaction aborted, concurrent modification for task {task} - moving on")
+                continue  # Move to next task
+            except Exception as e:
+                # Log Redis errors and fail fast
+                logger.error(f"Redis error while trying to acquire task {task}: {e}")
+                try:
+                    await pipeline.unwatch()  # Clean up on error
+                except Exception:
+                    pass
+                raise
 
         return None
 
     async def update_progress(self, task: str, progress: Dict) -> None:
+        """Update task progress. Since only the task owner calls this, no atomic protection needed."""
         key = f"task:{task}"
         now = int(time.time())
         mapping = {"progress": json.dumps(progress), "last_progress_time": now}
-        await self.redis_client.hset(key, mapping=mapping)
-        logger.info(f"Instance {self.instance_id} updated progress for task {task}")
+        
+        try:
+            await self.redis_client.hset(key, mapping=mapping)
+            await self.redis_client.expire(key, 7 * 24 * 60 * 60)  # Set TTL to 1 week
+            logger.info(f"Instance {self.instance_id} updated progress for task {task}")
+        except Exception as e:
+            logger.error(f"Redis error while updating progress for task {task}: {e}")
+            raise
 
     async def finish_task(self, task: str) -> None:
+        """Mark task as finished. Since only the task owner calls this, no atomic protection needed."""
         key = f"task:{task}"
         now = int(time.time())
-        await self.redis_client.hset(key, "finish_time", now)
-        logger.info(f"Instance {self.instance_id} finished task {task}")
+        
+        try:
+            # Optional: Verify ownership before finishing (defensive programming)
+            task_data = await self.redis_client.hgetall(key)
+            current_owner = task_data.get("lock")
+            
+            if current_owner and current_owner != self.instance_id:
+                logger.warning(f"Cannot finish task {task} - not owned by this instance")
+                return
+                
+            await self.redis_client.hset(key, "finish_time", now)
+            await self.redis_client.expire(key, 7 * 24 * 60 * 60)  # Set TTL to 1 week
+            logger.info(f"Instance {self.instance_id} finished task {task}")
+            
+        except Exception as e:
+            logger.error(f"Redis error while finishing task {task}: {e}")
+            raise
 
     # async def perform_task(self, task: str) -> None:
     #     """
