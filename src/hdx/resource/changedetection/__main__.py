@@ -119,8 +119,9 @@ def main(
                 output_status_count(status_count, csv_path)
                 break
 
-            if task_code == "2":
-                break
+            # if task_code == "2":
+            
+            #     break
 
         if use_redis:
             logger.info("Finished all tasks")

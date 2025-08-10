@@ -41,6 +41,7 @@ class TaskManager:
         now = int(time.time())
         for task in self.tasks:
             key = f"task:{task}"
+            pipeline = None
             
             try:
                 # Use WATCH/MULTI/EXEC for atomic task acquisition
@@ -55,7 +56,6 @@ class TaskManager:
 
                 # Skip tasks finished within the last day, but allow reprocessing of older finished tasks
                 if finish_time > 0 and now - finish_time < 24 * 60 * 60:
-                    await pipeline.unwatch()  # Clean up watch
                     continue
 
                 # Determine if we can acquire this task
@@ -102,9 +102,6 @@ class TaskManager:
                     # Successfully acquired the task atomically
                     logger.info(log_message)
                     return task
-                else:
-                    # Task is not available, clean up watch and continue
-                    await pipeline.unwatch()
 
             except WatchError:
                 # Transaction was aborted due to concurrent modification
@@ -113,11 +110,14 @@ class TaskManager:
             except Exception as e:
                 # Log Redis errors and fail fast
                 logger.error(f"Redis error while trying to acquire task {task}: {e}")
-                try:
-                    await pipeline.unwatch()  # Clean up on error
-                except Exception:
-                    pass
                 raise
+            finally:
+                # Always ensure pipeline is properly closed
+                if pipeline is not None:
+                    try:
+                        await pipeline.reset()
+                    except Exception:
+                        pass
 
         return None
 
