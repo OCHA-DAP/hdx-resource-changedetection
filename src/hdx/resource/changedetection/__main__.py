@@ -52,7 +52,9 @@ def main(
     configuration = Configuration.read()
     if not User.check_current_user_organization_access("hdx", "create_dataset"):
         raise PermissionError("API Token does not give access to HDX organisation!")
-    with wheretostart_tempdir_batch(LOOKUP) as info:
+    task_manager = TaskManager()
+    temp_folder = f'{LOOKUP}_{task_manager.instance_id}'
+    with wheretostart_tempdir_batch(temp_folder) as info:
         folder = info["folder"]
 
         today = now_utc()
@@ -69,7 +71,6 @@ def main(
         total_head_results = HeadResults({}, {})
         total_results = Results(today, {}, {})
         total_resource_status = {}
-        task_manager = TaskManager()
         task_code = None
         while not use_redis or (task_code := task_manager.sync_acquire_task()):
             netlocs_ignore = {

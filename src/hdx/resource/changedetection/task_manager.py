@@ -3,11 +3,13 @@ import json
 import logging
 import os
 import time
-import uuid
+from datetime import datetime
 from typing import Dict, List, Optional
 
 import redis.asyncio as redis
 from redis.exceptions import WatchError
+
+from hdx.resource.changedetection.name_generator import generate_random_id
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -19,7 +21,7 @@ class TaskManager:
             "REDIS_CONNECTION_URL",
             "redis://localhost:6379/0?decode_responses=True",
         )
-        self.instance_id: str = str(uuid.uuid4())
+        self.instance_id: str = generate_random_id()
         self.redis_client: redis.Redis = redis.from_url(
             redis_url,
             socket_connect_timeout=5,
@@ -31,10 +33,17 @@ class TaskManager:
         self.tasks: List[str] = self.generate_tasks(task_length)
         self._event_loop = asyncio.new_event_loop()
 
+        logging.info(f"TaskManager initialized with instance_id: {self.instance_id}")
+
     @staticmethod
     def generate_tasks(task_length: int = 1) -> List[str]:
         """Generate a list of task identifiers as hex strings"""
         return [f"{i:0{task_length}x}" for i in range(16**task_length)]
+
+    @staticmethod
+    def _format_timestamp(timestamp: int) -> str:
+        """Convert Unix timestamp to human-readable UTC format"""
+        return datetime.utcfromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S UTC')
 
     async def acquire_task(self) -> Optional[str]:
         """Try to acquire a task atomically using WATCH/MULTI/EXEC. Returns the hex code if successful."""
@@ -69,7 +78,9 @@ class TaskManager:
                     mapping = {
                         "lock": self.instance_id,
                         "start_time": now,
+                        "start_time_readable": self._format_timestamp(now),
                         "last_progress_time": now,
+                        "last_progress_time_readable": self._format_timestamp(now),
                     }
                     log_message = f"Instance {self.instance_id} acquired task {task}"
 
@@ -79,7 +90,9 @@ class TaskManager:
                     mapping = {
                         "lock": self.instance_id,
                         "start_time": now,
+                        "start_time_readable": self._format_timestamp(now),
                         "last_progress_time": now,
+                        "last_progress_time_readable": self._format_timestamp(now),
                     }
                     log_message = f"Instance {self.instance_id} stole stale task {task}"
 
@@ -125,7 +138,11 @@ class TaskManager:
         """Update task progress. Since only the task owner calls this, no atomic protection needed."""
         key = f"task:{task}"
         now = int(time.time())
-        mapping = {"progress": json.dumps(progress), "last_progress_time": now}
+        mapping = {
+            "progress": json.dumps(progress), 
+            "last_progress_time": now,
+            "last_progress_time_readable": self._format_timestamp(now),
+        }
         
         try:
             await self.redis_client.hset(key, mapping=mapping)
@@ -149,7 +166,11 @@ class TaskManager:
                 logger.warning(f"Cannot finish task {task} - not owned by this instance")
                 return
                 
-            await self.redis_client.hset(key, "finish_time", now)
+            mapping = {
+                "finish_time": now,
+                "finish_time_readable": self._format_timestamp(now),
+            }
+            await self.redis_client.hset(key, mapping=mapping)
             await self.redis_client.expire(key, 7 * 24 * 60 * 60)  # Set TTL to 1 week
             logger.info(f"Instance {self.instance_id} finished task {task}")
             
