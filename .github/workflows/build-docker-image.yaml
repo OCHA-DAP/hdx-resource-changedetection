@@ -16,7 +16,9 @@ jobs:
 
       - name: Checkout code
         id: checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Tag Info
         id: tag_info
@@ -48,5 +50,6 @@ jobs:
       - name: Build, tag, and push image to Amazon ECR
         uses: docker/build-push-action@v4
         with:
+          context: .
           push: true
           tags: public.ecr.aws/unocha/hdx-resource-changedetection:${{ steps.tag_info.outputs.IMAGE_TAG }}

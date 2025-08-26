@@ -4,3 +4,17 @@ services:
     image: redis:7-alpine
     ports:
       - "6379:6379"
+
+  hrcd:
+    image: public.ecr.aws/unocha/hdx-resource-changedetection:${HWA_IMAGE_TAG:-main}
+    hostname: hrcd
+    working_dir: /srv/hdx-resource-changedetection
+    environment:
+      REDIS_CONNECTION_URL: ${REDIS_CONNECTION_URL:-redis://redis:6379/2?decode_responses=True}
+    volumes:
+      - "./..:/srv/hdx-resource-changedetection"
+      - "./.useragents.yaml:/root/.useragents.yaml"
+      - "./.hdx_configuration.yaml:/root/.hdx_configuration.yaml"
+    entrypoint: tail -f /dev/null
+    profiles:
+      - testing

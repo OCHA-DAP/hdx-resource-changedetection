@@ -4,11 +4,23 @@ WORKDIR /srv/hdx-resource-changedetection
 
 COPY . .
 
-RUN mkdir -p \
-    /var/log/hdx-resource-changedetection && \
-    pip3 install --upgrade -r requirements.txt && \
-    rm -rf /var/lib/apk/* && rm -r /root/.cache
+COPY docker/entrypoint.sh /
 
-ENTRYPOINT /usr/bin/python
+RUN apk add --no-cache gettext-envsubst && \
+    mkdir -p /var/log/hdx-resource-changedetection && \
+    pip3 install --no-cache-dir --upgrade -r requirements.txt && \
+    apk add --virtual .build-deps \
+     git && \
+    python -m venv .tmpenv && \
+    source .tmpenv/bin/activate && \
+    pip install hatch && \
+    hatch build && \
+    deactivate && \
+    rm -rf ./.tmpenv &&\
+    apk del .build-deps && \
+    rm -rf /var/lib/apk/* && rm -r /root/.cache && \
+    chmod +x /entrypoint.sh
 
-CMD []
+ENTRYPOINT [ "/entrypoint.sh" ]
+
+CMD ["-c", "print('HDX Resource Change Detection')"]

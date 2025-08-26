@@ -5,6 +5,7 @@ from os.path import expanduser, join
 from urllib.parse import urlsplit
 
 from . import __version__
+from .config import LOOKUP, UPDATED_BY_SCRIPT, init_logging
 from .dataset_processor import DatasetProcessor
 from .head_results import HeadResults
 from .head_retrieval import HeadRetrieval
@@ -18,17 +19,13 @@ from hdx.resource.changedetection.task_manager import TaskManager
 from hdx.resource.changedetection.utilities import get_status_count, output_status_count
 from hdx.scraper.framework.utilities.reader import Read
 from hdx.utilities.dateparse import now_utc
-from hdx.utilities.easy_logging import setup_logging
 from hdx.utilities.path import (
     script_dir_plus_file,
     wheretostart_tempdir_batch,
 )
 
-setup_logging()
+init_logging()
 logger = logging.getLogger(__name__)
-
-lookup = "hdx-resource-changedetection"
-updated_by_script = "HDX Resource Change Detection"
 
 
 def main(
@@ -37,6 +34,7 @@ def main(
     csv_path: str = "",
     revise: bool = False,
     use_redis: bool = False,
+    specific_task_code: str = None,
 ) -> None:
     """Generate datasets and create them in HDX
 
@@ -46,14 +44,17 @@ def main(
         csv_path (str): Path to CSV file. Defaults to "" (don't generate)
         revise (bool): Whether to revise datasets. Defaults to False.
         use_redis (bool): Whether to use redis and split job into tasks. Defaults to False.
+        specific_task_code (str): Specific task code to run. Defaults to None (run all tasks).
     Returns:
         None
     """
-    logger.info(f"##### {lookup} version {__version__} ####")
+    logger.info(f"##### {LOOKUP} version {__version__} ####")
     configuration = Configuration.read()
     if not User.check_current_user_organization_access("hdx", "create_dataset"):
         raise PermissionError("API Token does not give access to HDX organisation!")
-    with wheretostart_tempdir_batch(lookup) as info:
+    task_manager = TaskManager()
+    temp_folder = f'{LOOKUP}_{task_manager.instance_id}'
+    with wheretostart_tempdir_batch(temp_folder) as info:
         folder = info["folder"]
 
         today = now_utc()
@@ -70,7 +71,6 @@ def main(
         total_head_results = HeadResults({}, {})
         total_results = Results(today, {}, {})
         total_resource_status = {}
-        task_manager = TaskManager()
         task_code = None
         while not use_redis or (task_code := task_manager.sync_acquire_task()):
             netlocs_ignore = {
@@ -120,8 +120,9 @@ def main(
                 output_status_count(status_count, csv_path)
                 break
 
-            if task_code == "2":
-                break
+            # if task_code == "2":
+            
+            #     break
 
         if use_redis:
             logger.info("Finished all tasks")
@@ -130,14 +131,14 @@ def main(
             status_count = get_status_count(total_resource_status)
             output_status_count(status_count, csv_path)
 
-    logger.info(f"{updated_by_script} completed!")
+    logger.info(f"{UPDATED_BY_SCRIPT} completed!")
 
 
 if __name__ == "__main__":
     facade(
         main,
         user_agent_config_yaml=join(expanduser("~"), ".useragents.yaml"),
-        user_agent_lookup=lookup,
+        user_agent_lookup=LOOKUP,
         project_config_yaml=script_dir_plus_file(
             join("config", "project_configuration.yaml"), main
         ),
