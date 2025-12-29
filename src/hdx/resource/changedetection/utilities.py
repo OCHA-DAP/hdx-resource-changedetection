@@ -97,5 +97,7 @@ def revise_resource(
 ) -> None:
     dataset_to_revise = datasets_to_revise.get(dataset_id, {})
     dataset_to_revise["match"] = {"id": dataset_id}
+    if "broken_link" not in resource_info:
+        resource_info["broken_link"] = False
     dataset_to_revise[f"update__resources__{resource_id}"] = resource_info
     datasets_to_revise[dataset_id] = dataset_to_revise

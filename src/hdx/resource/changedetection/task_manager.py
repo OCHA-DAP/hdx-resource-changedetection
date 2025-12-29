@@ -27,8 +27,8 @@ class TaskManager:
             socket_connect_timeout=5,
             socket_timeout=5,
             retry_on_timeout=True,
-            health_check_interval=30, 
-            max_connections=5
+            health_check_interval=30,
+            max_connections=5,
         )
         self.tasks: List[str] = self.generate_tasks(task_length)
         self._event_loop = asyncio.new_event_loop()
@@ -43,7 +43,7 @@ class TaskManager:
     @staticmethod
     def _format_timestamp(timestamp: int) -> str:
         """Convert Unix timestamp to human-readable UTC format"""
-        return datetime.utcfromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S UTC')
+        return datetime.utcfromtimestamp(timestamp).strftime("%Y-%m-%d %H:%M:%S UTC")
 
     async def acquire_task(self) -> Optional[str]:
         """Try to acquire a task atomically using WATCH/MULTI/EXEC. Returns the hex code if successful."""
@@ -51,7 +51,7 @@ class TaskManager:
         for task in self.tasks:
             key = f"task:{task}"
             pipeline = None
-            
+
             try:
                 # Use WATCH/MULTI/EXEC for atomic task acquisition
                 # Create pipeline and watch the key
@@ -111,14 +111,16 @@ class TaskManager:
                     pipeline.hset(key, mapping=mapping)
                     pipeline.expire(key, 7 * 24 * 60 * 60)  # Set TTL to 1 week
                     result = await pipeline.execute()
-                    
+
                     # Successfully acquired the task atomically
                     logger.info(log_message)
                     return task
 
             except WatchError:
                 # Transaction was aborted due to concurrent modification
-                logger.warning(f"Transaction aborted, concurrent modification for task {task} - moving on")
+                logger.warning(
+                    f"Transaction aborted, concurrent modification for task {task} - moving on"
+                )
                 continue  # Move to next task
             except Exception as e:
                 # Log Redis errors and fail fast
@@ -139,11 +141,11 @@ class TaskManager:
         key = f"task:{task}"
         now = int(time.time())
         mapping = {
-            "progress": json.dumps(progress), 
+            "progress": json.dumps(progress),
             "last_progress_time": now,
             "last_progress_time_readable": self._format_timestamp(now),
         }
-        
+
         try:
             await self.redis_client.hset(key, mapping=mapping)
             await self.redis_client.expire(key, 7 * 24 * 60 * 60)  # Set TTL to 1 week
@@ -156,16 +158,18 @@ class TaskManager:
         """Mark task as finished. Since only the task owner calls this, no atomic protection needed."""
         key = f"task:{task}"
         now = int(time.time())
-        
+
         try:
             # Optional: Verify ownership before finishing (defensive programming)
             task_data = await self.redis_client.hgetall(key)
             current_owner = task_data.get("lock")
-            
+
             if current_owner and current_owner != self.instance_id:
-                logger.warning(f"Cannot finish task {task} - not owned by this instance")
+                logger.warning(
+                    f"Cannot finish task {task} - not owned by this instance"
+                )
                 return
-                
+
             mapping = {
                 "finish_time": now,
                 "finish_time_readable": self._format_timestamp(now),
@@ -173,7 +177,7 @@ class TaskManager:
             await self.redis_client.hset(key, mapping=mapping)
             await self.redis_client.expire(key, 7 * 24 * 60 * 60)  # Set TTL to 1 week
             logger.info(f"Instance {self.instance_id} finished task {task}")
-            
+
         except Exception as e:
             logger.error(f"Redis error while finishing task {task}: {e}")
             raise
