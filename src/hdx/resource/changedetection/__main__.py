@@ -96,6 +96,10 @@ def main(
             head_results = HeadResults(results, dataset_processor.get_resources())
             head_results.process(resource_status)
 
+            zip_resources_to_get = head_results.get_distributed_zip_resources_to_get()
+            zip_results = ZipResults(configuration.get_user_agent(), netlocs)
+            zip_results.process(resource_status)
+
             resources_to_get = head_results.get_distributed_resources_to_get()
             netlocs = head_results.get_netlocs()
             retrieval = Retrieval(configuration.get_user_agent(), netlocs)

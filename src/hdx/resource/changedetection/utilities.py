@@ -5,7 +5,7 @@ from typing import Dict
 import aiohttp
 from prettytable import PrettyTable
 
-from hdx.utilities.dictandlist import write_list_to_csv
+from hdx.utilities.saver import save_iterable
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +67,7 @@ def output_status_count(status_count: Dict[str, int], path: str) -> None:
         rows.append(row)
     print(table)
     if path:
-        write_list_to_csv(path, rows)
+        save_iterable(path, rows)
 
 
 def is_server_error(ex: BaseException) -> bool:
