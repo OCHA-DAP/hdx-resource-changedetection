@@ -1,18 +1,11 @@
-import re
 import struct
-from typing import Tuple, Dict, Optional
-
-from hdx.resource.changedetection.retrieval_utilities import is_xlsx_file
+from typing import Dict, Tuple
 
 EOCD_MIN_SIZE = 22
 MAX_COMMENT_SIZE = 65535
 EOCD_SIGNATURE = b"PK\x05\x06"
 CD_HEADER_SIGNATURE = b"PK\x01\x02"
-EXCEL_PATTERNS = (
-    re.compile(r"^xl/worksheets/sheet\d+\.xml$"), # The Grid Data
-    re.compile(r"^xl/sharedStrings\.xml$"),       # The Text Data
-    re.compile(r"^xl/workbook\.xml$"),            # The Structure
-)
+
 
 def find_eocd_signature(tail_data: bytes) -> Tuple[int, int, int]:
     # Find EOCD Signature
@@ -22,9 +15,10 @@ def find_eocd_signature(tail_data: bytes) -> Tuple[int, int, int]:
 
     # Unpack EOCD
     eocd = tail_data[eocd_pos : eocd_pos + 22]
-    _, _, _, _, total_records, cd_size, cd_offset, _ = struct.unpack('<4sHHHHIIH', eocd)
+    _, _, _, _, total_records, cd_size, cd_offset, _ = struct.unpack("<4sHHHHIIH", eocd)
     cd_end = cd_offset + cd_size
     return total_records, cd_offset, cd_end
+
 
 def parse_central_directory(data: bytes, num_records: int) -> Dict[str, int]:
     results = {}
@@ -50,6 +44,7 @@ def parse_central_directory(data: bytes, num_records: int) -> Dict[str, int]:
         offset += 46 + filepath_len + extra_len + comment_len
     return results
 
+
 def get_zip_crcs(buffer: bytes, size: int) -> Dict[str, int]:
     read_size = min(size, MAX_COMMENT_SIZE + EOCD_MIN_SIZE)
     tail_data = buffer[size - read_size :]
@@ -59,29 +54,21 @@ def get_zip_crcs(buffer: bytes, size: int) -> Dict[str, int]:
     cd_data = buffer[cd_offset:cd_end]
     return parse_central_directory(cd_data, num_records)
 
-def match_excel_patterns(filepath: str) -> bool:
-    for pattern in EXCEL_PATTERNS:
-        if pattern.match(filepath):
-            return True
-    return False
 
-def get_crc_sum(url: str, resource_format: str, mimetype: str, file_crcs: Dict[str, int], xlsx_url_ignore: Optional[str]) -> str:
+def get_crc_sum(file_crcs: Dict[str, int]) -> str:
     crc_sum = 0
-    if is_xlsx_file(url, resource_format, mimetype, xlsx_url_ignore):
-        for filepath in file_crcs:
-            if match_excel_patterns(filepath):
-                crc_sum ^= file_crcs[filepath]
-    else:
-        for crc in file_crcs.values():
-            crc_sum ^= crc
+    for crc in file_crcs.values():
+        crc_sum ^= crc
     if crc_sum:
         return f"{crc_sum:08x}"
     return ""
 
+
 def get_zip_tail_header(size: int) -> Dict[str, str]:
     read_size = min(size, MAX_COMMENT_SIZE + EOCD_MIN_SIZE)
-    return {'Range': f'bytes={size - read_size}-'}
+    return {"Range": f"bytes={size - read_size}-"}
+
 
 def get_zip_cd_header(tail_data: bytes) -> Tuple[int, Dict]:
     total_records, cd_offset, cd_end = find_eocd_signature(tail_data)
-    return total_records, {'Range': f'bytes={cd_offset}-{cd_end-1}'}
+    return total_records, {"Range": f"bytes={cd_offset}-{cd_end - 1}"}

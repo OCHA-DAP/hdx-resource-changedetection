@@ -3,13 +3,20 @@
 import asyncio
 import hashlib
 import logging
+from io import BytesIO
 from timeit import default_timer as timer
-from typing import Dict, List, Set, Tuple, Optional
+from typing import Dict, List, Optional, Set, Tuple
 from urllib.parse import urlsplit
 
-from aiohttp import ClientResponseError, ClientResponse, ClientSession, ClientTimeout, \
-    TCPConnector
+from aiohttp import (
+    ClientResponse,
+    ClientResponseError,
+    ClientSession,
+    ClientTimeout,
+    TCPConnector,
+)
 from aiolimiter import AsyncLimiter
+from openpyxl import load_workbook
 from tenacity import (
     retry,
     retry_if_exception,
@@ -17,12 +24,22 @@ from tenacity import (
 )
 from tqdm.asyncio import tqdm_asyncio
 
-from .retrieval_utilities import check_mimetype, check_signature, zip_signature, \
-    get_http_size
+from .retrieval_utilities import (
+    check_mimetype,
+    check_signature,
+    get_http_size,
+    is_xlsx_file,
+    zip_signature,
+)
 from .tenacity_custom_wait import custom_wait
 from .utilities import is_server_error
-from .zip_crc import get_zip_crcs, get_zip_tail_header, \
-    parse_central_directory, get_zip_cd_header, get_crc_sum
+from .zip_crc import (
+    get_crc_sum,
+    get_zip_cd_header,
+    get_zip_crcs,
+    get_zip_tail_header,
+    parse_central_directory,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -53,35 +70,67 @@ class Retrieval:
         stop=stop_after_attempt(3),
         wait=custom_wait(multiplier=2, min=4),
     )
-    async def get_async_crc_sum(self, session: ClientSession, url: str, resource_format: str, mimetype: str, size: int) -> str:
+    async def get_async_crc_sum(
+        self, session: ClientSession, url: str, size: int
+    ) -> str:
         header_tail = get_zip_tail_header(size)
 
-        async with session.get(url, headers=header_tail, allow_redirects=True) as response:
+        async with session.get(
+            url, headers=header_tail, allow_redirects=True
+        ) as response:
             tail_data = await response.read()
 
         total_records, headers_cd = get_zip_cd_header(tail_data)
         if total_records == -1:
             return ""
-        async with session.get(url, headers=headers_cd, allow_redirects=True) as response:
+        async with session.get(
+            url, headers=headers_cd, allow_redirects=True
+        ) as response:
             cd_data = await response.read()
         file_crcs = parse_central_directory(cd_data, total_records)
         if not file_crcs:
             return ""
-        return get_crc_sum(url, resource_format, mimetype, file_crcs, self._xlsx_url_ignore)
+        return get_crc_sum(file_crcs)
 
-    async def hash_full_file(self, response: ClientResponse, url: str, resource_format: str, signature: bytes, mimetype: str) -> Tuple[str, int]:
+    @staticmethod
+    async def hash_full_file(
+        response: ClientResponse, signature: bytes, is_xlsx: bool
+    ) -> Tuple[str, int]:
         iterator = response.content.iter_any()
         if signature == zip_signature:
             buffer = bytearray(signature)
             async for chunk in iterator:
                 buffer.extend(chunk)
             size = len(buffer)
-            file_crcs = get_zip_crcs(buffer, size)
-            if file_crcs:
-                crc_sum = get_crc_sum(url, resource_format, mimetype, file_crcs, self._xlsx_url_ignore)
-                if crc_sum:
-                    return crc_sum, size
-            return hashlib.md5(buffer).hexdigest(), size
+            if is_xlsx:
+                file_stream = BytesIO(buffer)
+                workbook = load_workbook(
+                    filename=file_stream, read_only=True, data_only=True
+                )
+                md5hash = hashlib.md5()
+                try:
+                    for sheet_name in workbook.sheetnames:
+                        sheet = workbook[sheet_name]
+                        md5hash.update(sheet_name.encode("utf-8"))
+
+                        for row in sheet.iter_rows(values_only=True):
+                            md5hash.update(str(row).encode("utf-8"))
+                    del buffer
+                    return md5hash.hexdigest(), size
+                finally:
+                    if "workbook" in locals():
+                        workbook.close()
+                    file_stream.close()
+            else:
+                file_crcs = get_zip_crcs(buffer, size)
+                if file_crcs:
+                    crc_sum = get_crc_sum(file_crcs)
+                    if crc_sum:
+                        del buffer
+                        return crc_sum, size
+            md5hash = hashlib.md5(buffer).hexdigest()  # fallback
+            del buffer
+            return md5hash, size
 
         size = len(signature)
         md5hash = hashlib.md5(signature)
@@ -140,11 +189,20 @@ class Retrieval:
             mime_match = check_mimetype(mimetype, resource_format)
             http_size = get_http_size(headers)
             accept_ranges = headers.get("Accept-Ranges")
+            is_xlsx = is_xlsx_file(
+                url, resource_format, mimetype, self._xlsx_url_ignore
+            )
+
             # server can understand Range header
             if accept_ranges == "bytes":
-                if http_size and http_size > 31457280 and signature == zip_signature:
+                if (
+                    http_size
+                    and http_size > 31457280
+                    and signature == zip_signature
+                    and not is_xlsx
+                ):
                     response.close()
-                    final_hash = await self.get_async_crc_sum(session, url, resource_format, mimetype, http_size)
+                    final_hash = await self.get_async_crc_sum(session, url, http_size)
                     return (
                         resource_id,
                         http_size,
@@ -153,7 +211,7 @@ class Retrieval:
                         sig_match,
                         mime_match,
                         http_status,
-                        3  # we'll read tail, central directory and calculate crc
+                        3,  # we'll read tail, central directory and calculate crc
                     )
                 # if the file is < 30Mb, it's probably cheaper to download it all than
                 # make multiple requests
@@ -166,7 +224,7 @@ class Retrieval:
                 size = http_size
                 status = -2  # too big to hash
             else:
-                final_hash, size = await self.hash_full_file(response, url, resource_format, signature, mimetype)
+                final_hash, size = await self.hash_full_file(response, signature)
                 if not http_size or (http_size and size == http_size):
                     status = 1
                 else:
@@ -179,7 +237,7 @@ class Retrieval:
                 sig_match,
                 mime_match,
                 http_status,
-                status
+                status,
             )
 
     async def process(
@@ -249,7 +307,7 @@ class Retrieval:
                     sig_match,
                     mime_match,
                     http_status,
-                    status
+                    status,
                 ) = await f
 
                 responses[resource_id] = (
@@ -259,7 +317,7 @@ class Retrieval:
                     sig_match,
                     mime_match,
                     http_status,
-                    status
+                    status,
                 )
             return responses
 

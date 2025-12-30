@@ -7,8 +7,6 @@ from urllib.parse import urlsplit
 from . import __version__
 from .config import LOOKUP, UPDATED_BY_SCRIPT, init_logging
 from .dataset_processor import DatasetProcessor
-from .head_results import HeadResults
-from .head_retrieval import HeadRetrieval
 from .results import Results
 from .retrieval import Retrieval
 from hdx.api.configuration import Configuration
@@ -68,7 +66,6 @@ def main(
             today=today,
         )
 
-        total_head_results = HeadResults({}, {})
         total_results = Results(today, {}, {})
         total_resource_status = {}
         task_code = None
@@ -86,31 +83,15 @@ def main(
 
             resources_to_check = dataset_processor.get_distributed_resources_to_check()
             netlocs = dataset_processor.get_netlocs()
-            retrieval = HeadRetrieval(configuration.get_user_agent(), netlocs)
+            retrieval = Retrieval(configuration.get_user_agent(), netlocs)
             results = retrieval.retrieve(resources_to_check)
 
-            total_head_results.add_more_results(
-                results, dataset_processor.get_resources()
-            )
-            resource_status = {}
-            head_results = HeadResults(results, dataset_processor.get_resources())
-            head_results.process(resource_status)
-
-            zip_resources_to_get = head_results.get_distributed_zip_resources_to_get()
-            zip_results = ZipResults(configuration.get_user_agent(), netlocs)
-            zip_results.process(resource_status)
-
-            resources_to_get = head_results.get_distributed_resources_to_get()
-            netlocs = head_results.get_netlocs()
-            retrieval = Retrieval(configuration.get_user_agent(), netlocs)
-            results = retrieval.retrieve(resources_to_get)
-
             total_results.add_more_results(results, dataset_processor.get_resources())
+            resource_status = {}
             results = Results(today, results, dataset_processor.get_resources())
             results.process(resource_status)
 
-            datasets_to_revise = head_results.get_datasets_to_revise()
-            datasets_to_revise.update(results.get_datasets_to_revise())
+            datasets_to_revise = results.get_datasets_to_revise()
 
             dataset_updater = DatasetUpdater(configuration, datasets_to_revise)
             dataset_updater.process(revise)
@@ -130,7 +111,6 @@ def main(
 
         if use_redis:
             logger.info("Finished all tasks")
-            total_head_results.process(total_resource_status)
             total_results.process(total_resource_status)
             status_count = get_status_count(total_resource_status)
             output_status_count(status_count, csv_path)

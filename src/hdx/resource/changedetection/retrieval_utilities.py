@@ -1,7 +1,5 @@
 from typing import Any, Optional
 
-from pyasn1.type.namedtype import OptionalNamedType
-
 zip_signature = b"PK\x03\x04"
 
 signatures = {
@@ -50,10 +48,7 @@ def get_http_size(headers: Any) -> Optional[int]:
 
 
 def is_xlsx_file(
-    url: str,
-    resource_format: str,
-    mimetype: str,
-    xlsx_url_ignore: Optional[str]
+    url: str, resource_format: str, mimetype: str, xlsx_url_ignore: Optional[str]
 ) -> bool:
     if (
         resource_format == "xlsx"
