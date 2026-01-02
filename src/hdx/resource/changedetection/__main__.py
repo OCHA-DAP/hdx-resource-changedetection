@@ -86,9 +86,10 @@ def main(
             retrieval = Retrieval(configuration.get_user_agent(), netlocs)
             results = retrieval.retrieve(resources_to_check)
 
-            total_results.add_more_results(results, dataset_processor.get_resources())
+            resources = dataset_processor.get_resources()
+            total_results.add_more_results(results, resources)
             resource_status = {}
-            results = Results(today, results, dataset_processor.get_resources())
+            results = Results(today, results, resources)
             results.process(resource_status)
 
             datasets_to_revise = results.get_datasets_to_revise()

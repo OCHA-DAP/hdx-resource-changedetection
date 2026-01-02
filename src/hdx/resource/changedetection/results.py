@@ -3,14 +3,15 @@ from datetime import datetime
 from http import HTTPStatus
 from typing import Dict, Tuple
 
-from .utilities import revise_resource, status_lookup
+from .utilities import get_blank_log_status, revise_resource, status_lookup
 from hdx.utilities.dateparse import parse_date
+)
 from hdx.utilities.typehint import ListTuple
 
 logger = logging.getLogger(__name__)
 
 
-class Results:
+class HeadResults:
     def __init__(
         self,
         today: datetime,
@@ -30,57 +31,105 @@ class Results:
 
     def process(self, resource_status: Dict[str, Dict]) -> None:
         for resource_id, result in self._results.items():
-            log_status = resource_status.get(resource_id)
+            log_status = get_blank_log_status()
             resource = self._resources[resource_id]
+            existing_hash = resource[6]
+            if existing_hash:
+                log_status["Existing Hash"] = "Y"
+            else:
+                log_status["Existing Hash"] = "N"
+            existing_size = resource[4]
+            if existing_size:
+                log_status["Existing Size"] = "Y"
+            else:
+                log_status["Existing Size"] = "N"
+            resource_date = resource[5]
+            if resource_date:
+                log_status["Existing Modified"] = "Y"
+            else:
+                log_status["Existing Modified"] = "N"
+            existing_broken = resource[7]
+            if existing_broken:
+                log_status["Existing Broken"] = "Y"
+            else:
+                log_status["Existing Broken"] = "N"
             dataset_id = resource[3]
-            size, last_modified, hash, status = result
-            status_str = status_lookup[status]
-            log_status["Get Status"] = status_str
-            if status != 0 and status != HTTPStatus.OK:
-                if status < 0:
-                    if status < -10:
-                        if status < -100:
-                            if not resource[7]:  # currently broken
-                                revise_resource(
-                                    self._datasets_to_revise,
-                                    dataset_id,
-                                    resource_id,
-                                )
-                                log_status["Set Broken"] = "Y"
-                        continue
-                else:
-                    if status != HTTPStatus.TOO_MANY_REQUESTS:
-                        if not resource[7]:  # currently broken
-                            revise_resource(
-                                self._datasets_to_revise, dataset_id, resource_id
-                            )
-                            log_status["Set Broken"] = "Y"
+            (
+                size,
+                last_modified,
+                etag,
+                final_hash,
+                sig_match,
+                mime_match,
+                http_status,
+                status,
+            ) = result
+            log_status["HTTP Status"] = status_lookup[http_status]
+            if http_status != HTTPStatus.OK:
+                if http_status not in (
+                    HTTPStatus.FORBIDDEN,
+                    HTTPStatus.METHOD_NOT_ALLOWED,
+                    HTTPStatus.REQUEST_TIMEOUT,
+                    HTTPStatus.CONFLICT,
+                    HTTPStatus.TOO_MANY_REQUESTS,
+                ):
+                    if not existing_broken:  # currently broken
+                        revise_resource(
+                            self._datasets_to_revise, dataset_id, resource_id
+                        )
+                        log_status["Set Broken"] = "Y"
+                resource_status[resource_id] = log_status
+                continue
 
             resource_info = {}
             update = False
             hash_changed = False
-            if status == HTTPStatus.OK:
-                etag_str = "ETag"
-            else:
-                etag_str = "Hash"
 
-            if hash:
-                log_status[f"New {etag_str}"] = "Y"
-                if hash != resource[6]:
-                    resource_info["hash"] = hash
-                    hash_changed = True
-                    update = True
-                    log_status[f"{etag_str} Changed"] = "Y"
+            log_status["Sig Match"] = "Y" if sig_match else "N"
+            log_status["Mime Match"] = "Y" if mime_match else "N"
+            if etag:
+                log_status["New ETag"] = "Y"
+                if etag != existing_hash:
+                    log_status["ETag Changed"] = "Y"
                 else:
-                    log_status[f"{etag_str} Changed"] = "N"
-
+                    log_status["ETag Changed"] = "N"
             else:
-                log_status[f"New {etag_str}"] = "N"
+                log_status["New ETag"] = "N"
+                log_status["ETag Changed"] = ""
+
+            if final_hash:
+                match status:
+                    case 1:
+                        log_status["Hash Type"] = "md5"
+                    case 2:
+                        log_status["Hash Type"] = "md5-xl"
+                    case 3:
+                        log_status["Hash Type"] = "crc"
+                    case 4:
+                        log_status["Hash Type"] = "md5-fb"
+                    case 5:
+                        log_status["Hash Type"] = "etag"
+                    case 6:
+                        log_status["Hash Type"] = "etag-sz"
+                    case 7:
+                        log_status["Hash Type"] = "crc-as"
+                    case _:
+                        log_status["Hash Type"] = ""
+                log_status[f"New Hash"] = "Y"
+                if final_hash != resource[6]:
+                    if log_status["Hash Type"]:
+                        resource_info["hash"] = final_hash
+                        hash_changed = True
+                        update = True
+                    log_status[f"Hash Changed"] = "Y"
+                else:
+                    log_status[f"Hash Changed"] = "N"
+            else:
+                log_status[f"New Hash"] = "N"
                 if resource[6]:
-                    log_status[f"{etag_str} Changed"] = "Y"
+                    log_status[f"Hash Changed"] = "Y"
                 else:
-                    log_status[f"{etag_str} Changed"] = "N"
-
+                    log_status[f"Hash Changed"] = "N"
             if size:
                 log_status["New Size"] = "Y"
                 if size != resource[4]:
@@ -137,6 +186,16 @@ class Results:
                 if hash_changed and last_modified and last_modified != resource_date:
                     dt_notz = last_modified.replace(tzinfo=None)
                     resource_info["last_modified"] = dt_notz.isoformat()
+
+                match status:
+                    case -1 | -2 | -3 | -4:
+                        log_status["Warning"] = "HTTP Size!=Size"
+                    case -6:
+                        log_status["Error"] = "Too big, no etag"
+                    case -10:
+                        log_status["Error"] = "ClientResponseError"
+                    case -11:
+                        log_status["Error"] = "Unknown Error"
                 if resource_info:
                     revise_resource(
                         self._datasets_to_revise,
@@ -145,6 +204,7 @@ class Results:
                         resource_info,
                     )
                     log_status["Update"] = "Y"
+            resource_status[resource_id] = log_status
 
     def get_datasets_to_revise(self) -> Dict[str, Dict]:
         return self._datasets_to_revise
