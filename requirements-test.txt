@@ -8,7 +8,7 @@ aiohappyeyeballs==2.6.1
     # via
     #   -c requirements.txt
     #   aiohttp
-aiohttp==3.13.2
+aiohttp==3.13.3
     # via
     #   -c requirements.txt
     #   hdx-resource-changedetection (pyproject.toml)
@@ -44,7 +44,7 @@ cachetools==6.2.4
     # via
     #   -c requirements.txt
     #   google-auth
-certifi==2025.11.12
+certifi==2026.1.4
     # via
     #   -c requirements.txt
     #   requests
@@ -383,14 +383,10 @@ rsa==4.9.1
     # via
     #   -c requirements.txt
     #   google-auth
-ruamel-yaml==0.19.0
+ruamel-yaml==0.19.1
     # via
     #   -c requirements.txt
     #   hdx-python-utilities
-ruamel-yaml-clibz==0.3.4
-    # via
-    #   -c requirements.txt
-    #   ruamel-yaml
 setuptools==80.9.0
     # via
     #   -c requirements.txt

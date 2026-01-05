@@ -4,7 +4,7 @@ aiodns==3.6.1
     # via aiohttp
 aiohappyeyeballs==2.6.1
     # via aiohttp
-aiohttp==3.13.2
+aiohttp==3.13.3
     # via hdx-resource-changedetection (pyproject.toml)
 aiolimiter==1.2.1
     # via hdx-resource-changedetection (pyproject.toml)
@@ -25,7 +25,7 @@ brotli==1.2.0
     # via aiohttp
 cachetools==6.2.4
     # via google-auth
-certifi==2025.11.12
+certifi==2026.1.4
     # via requests
 cffi==2.0.0
     # via pycares
@@ -216,10 +216,8 @@ rpds-py==0.30.0
     #   referencing
 rsa==4.9.1
     # via google-auth
-ruamel-yaml==0.19.0
+ruamel-yaml==0.19.1
     # via hdx-python-utilities
-ruamel-yaml-clibz==0.3.4
-    # via ruamel-yaml
 setuptools==80.9.0
     # via ckanapi
 shellingham==1.5.4

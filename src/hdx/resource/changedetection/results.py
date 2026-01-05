@@ -5,13 +5,12 @@ from typing import Dict, Tuple
 
 from .utilities import get_blank_log_status, revise_resource, status_lookup
 from hdx.utilities.dateparse import parse_date
-)
 from hdx.utilities.typehint import ListTuple
 
 logger = logging.getLogger(__name__)
 
 
-class HeadResults:
+class Results:
     def __init__(
         self,
         today: datetime,
@@ -61,23 +60,27 @@ class HeadResults:
                 final_hash,
                 sig_match,
                 mime_match,
+                size_match,
                 http_status,
                 status,
             ) = result
+
+            match status:
+                case -1:
+                    log_status["Error"] = "Too big, no etag"
+                case -10:
+                    log_status["Error"] = "ClientResponseError"
+                case -11:
+                    log_status["Error"] = "Unknown Error"
+
             log_status["HTTP Status"] = status_lookup[http_status]
-            if http_status != HTTPStatus.OK:
-                if http_status not in (
-                    HTTPStatus.FORBIDDEN,
-                    HTTPStatus.METHOD_NOT_ALLOWED,
-                    HTTPStatus.REQUEST_TIMEOUT,
-                    HTTPStatus.CONFLICT,
-                    HTTPStatus.TOO_MANY_REQUESTS,
-                ):
-                    if not existing_broken:  # currently broken
-                        revise_resource(
-                            self._datasets_to_revise, dataset_id, resource_id
-                        )
-                        log_status["Set Broken"] = "Y"
+
+            if status <= 0:
+                if (
+                    http_status != HTTPStatus.TOO_MANY_REQUESTS and not existing_broken
+                ):  # currently broken
+                    revise_resource(self._datasets_to_revise, dataset_id, resource_id)
+                    log_status["Set Broken"] = "Y"
                 resource_status[resource_id] = log_status
                 continue
 
@@ -85,17 +88,19 @@ class HeadResults:
             update = False
             hash_changed = False
 
-            log_status["Sig Match"] = "Y" if sig_match else "N"
-            log_status["Mime Match"] = "Y" if mime_match else "N"
-            if etag:
-                log_status["New ETag"] = "Y"
-                if etag != existing_hash:
-                    log_status["ETag Changed"] = "Y"
-                else:
-                    log_status["ETag Changed"] = "N"
+            if sig_match is None:
+                log_status["Sig Match"] = ""
             else:
-                log_status["New ETag"] = "N"
-                log_status["ETag Changed"] = ""
+                log_status["Sig Match"] = "Y" if sig_match else "N"
+            if mime_match is None:
+                log_status["Mime Match"] = ""
+            else:
+                log_status["Mime Match"] = "Y" if mime_match else "N"
+            if size_match is None:
+                log_status["Size Match"] = ""
+            else:
+                log_status["Size Match"] = "Y" if size_match else "N"
+            log_status["Has ETag"] = "Y" if etag else "N"
 
             if final_hash:
                 match status:
@@ -115,23 +120,23 @@ class HeadResults:
                         log_status["Hash Type"] = "crc-as"
                     case _:
                         log_status["Hash Type"] = ""
-                log_status[f"New Hash"] = "Y"
+                log_status["Has Hash"] = "Y"
                 if final_hash != resource[6]:
                     if log_status["Hash Type"]:
                         resource_info["hash"] = final_hash
                         hash_changed = True
                         update = True
-                    log_status[f"Hash Changed"] = "Y"
+                    log_status["Hash Changed"] = "Y"
                 else:
-                    log_status[f"Hash Changed"] = "N"
+                    log_status["Hash Changed"] = "N"
             else:
-                log_status[f"New Hash"] = "N"
+                log_status["Has Hash"] = "N"
                 if resource[6]:
-                    log_status[f"Hash Changed"] = "Y"
+                    log_status["Hash Changed"] = "Y"
                 else:
-                    log_status[f"Hash Changed"] = "N"
+                    log_status["Hash Changed"] = "N"
             if size:
-                log_status["New Size"] = "Y"
+                log_status["Has Size"] = "Y"
                 if size != resource[4]:
                     log_status["Size Changed"] = "Y"
                     resource_info["size"] = size
@@ -139,7 +144,7 @@ class HeadResults:
                 else:
                     log_status["Size Changed"] = "N"
             else:
-                log_status["New Size"] = "N"
+                log_status["Has Size"] = "N"
                 if resource[4]:
                     log_status["Size Changed"] = "Y"
                 else:
@@ -147,7 +152,7 @@ class HeadResults:
 
             resource_date = resource[5]
             if last_modified:
-                log_status["New Modified"] = "Y"
+                log_status["Has Modified"] = "Y"
                 last_modified = parse_date(last_modified)
                 if not resource_date or last_modified > resource_date:
                     log_status["Modified Changed"] = "Y"
@@ -161,7 +166,7 @@ class HeadResults:
                 else:
                     log_status["Modified Changed"] = "N"
             else:
-                log_status["New Modified"] = "N"
+                log_status["Has Modified"] = "N"
                 if resource_date:
                     log_status["Modified Changed"] = "Y"
                 else:
@@ -187,15 +192,6 @@ class HeadResults:
                     dt_notz = last_modified.replace(tzinfo=None)
                     resource_info["last_modified"] = dt_notz.isoformat()
 
-                match status:
-                    case -1 | -2 | -3 | -4:
-                        log_status["Warning"] = "HTTP Size!=Size"
-                    case -6:
-                        log_status["Error"] = "Too big, no etag"
-                    case -10:
-                        log_status["Error"] = "ClientResponseError"
-                    case -11:
-                        log_status["Error"] = "Unknown Error"
                 if resource_info:
                     revise_resource(
                         self._datasets_to_revise,

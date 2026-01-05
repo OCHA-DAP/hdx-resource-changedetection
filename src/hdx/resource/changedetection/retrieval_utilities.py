@@ -8,6 +8,7 @@ signatures = {
     "shp": [zip_signature],
     "xls": [b"\xd0\xcf\x11\xe0"],
     "xlsx": [zip_signature],
+    "zip": [zip_signature],
 }
 
 ignore_mimetypes = ["application/octet-stream", "application/binary"]
@@ -18,23 +19,31 @@ mimetypes = {
     "csv": ["text/csv", "application/zip", "application/x-zip-compressed"],
     "xls": ["application/vnd.ms-excel"],
     "xlsx": ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"],
+    "zip": ["application/zip", "application/x-zip-compressed"],
 }
 
 
-def check_signature(signature: bytes, resource_format: str) -> bool:
+def check_signature(signature: bytes, resource_format: str) -> Optional[bool]:
+    if "zipped" in resource_format:
+        resource_format = "zip"
     expected_signatures = signatures.get(resource_format)
-    if expected_signatures is not None:
-        if any(signature[: len(x)] == x for x in expected_signatures):
-            return True
+    if not expected_signatures:
+        return None
+    if any(signature[: len(x)] == x for x in expected_signatures):
+        return True
     return False
 
 
-def check_mimetype(mimetype: str, resource_format: str) -> bool:
-    if mimetype not in ignore_mimetypes:
-        expected_mimetypes = mimetypes.get(resource_format)
-        if expected_mimetypes is not None:
-            if any(x in mimetype for x in expected_mimetypes):
-                return True
+def check_mimetype(mimetype: str, resource_format: str) -> Optional[bool]:
+    if mimetype in ignore_mimetypes:
+        return None
+    if "zipped" in resource_format:
+        resource_format = "zip"
+    expected_mimetypes = mimetypes.get(resource_format)
+    if expected_mimetypes is None:
+        return None
+    if any(x in mimetype for x in expected_mimetypes):
+        return True
     return False
 
 

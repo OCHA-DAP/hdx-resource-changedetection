@@ -15,7 +15,6 @@ from aiohttp import (
     TCPConnector,
 )
 from aiolimiter import AsyncLimiter
-from hdx.utilities.file_hashing import hash_excel_buffer, crc_zip_buffer
 from tenacity import (
     retry,
     retry_if_exception,
@@ -32,13 +31,16 @@ from .retrieval_utilities import (
 )
 from .tenacity_custom_wait import custom_wait
 from .utilities import is_server_error
+from hdx.utilities.file_hashing import (
+    crc_zip_buffer,
+    hash_excel_buffer,
+)
 from hdx.utilities.zip_crc import (
     get_crc_sum,
     get_zip_cd_header,
     get_zip_tail_header,
     parse_central_directory,
 )
-from hdx.utilities.file_hashing import get_zip_crcs_buffer
 
 logger = logging.getLogger(__name__)
 
@@ -152,7 +154,7 @@ class Retrieval:
             url, headers={"Accept-Encoding": "identity"}, allow_redirects=True
         ) as response:
             http_status = response.status
-            if http_status == 200:
+            if http_status != 200:
                 exception = ClientResponseError(
                     code=http_status,
                     message=response.reason,
@@ -170,6 +172,7 @@ class Retrieval:
             mimetype = headers.get("Content-Type")
             mime_match = check_mimetype(mimetype, resource_format)
             http_size = get_http_size(headers)
+            size_match = None
             accept_ranges = headers.get("Accept-Ranges")
             is_xlsx = is_xlsx_file(
                 url, resource_format, mimetype, self._xlsx_url_ignore
@@ -194,6 +197,7 @@ class Retrieval:
                             final_hash,
                             sig_match,
                             mime_match,
+                            size_match,
                             http_status,
                             7,
                         )
@@ -207,7 +211,7 @@ class Retrieval:
                     status = 6
                 else:
                     final_hash = None
-                    status = -6  # too big to hash
+                    status = -1  # too big to hash
             elif etag and signature != zip_signature:
                 final_hash = etag  # we can just use the etag
                 size = http_size
@@ -217,8 +221,11 @@ class Retrieval:
                 final_hash, status, size = await self.hash_full_file(
                     response, signature, is_xlsx
                 )
-                if http_size and http_size != size:
-                    status = -status  # size mismatch
+                if http_size:
+                    if http_size == size:
+                        size_match = True
+                    else:
+                        size_match = False  # size mismatch
             return (
                 resource_id,
                 size,
@@ -227,6 +234,7 @@ class Retrieval:
                 final_hash,
                 sig_match,
                 mime_match,
+                size_match,
                 http_status,
                 status,
             )
@@ -258,10 +266,21 @@ class Retrieval:
                 return await self.fetch(url, resource_id, resource_format, session)
             except ClientResponseError as ex:
                 logger.error(f"{ex.status} {ex.message} {ex.request_info.url}")
-                return resource_id, None, None, None, None, False, False, ex.status, -10
+                return (
+                    resource_id,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    ex.status,
+                    -10,
+                )
             except Exception as ex:
                 logger.error(ex)
-                return resource_id, None, None, None, None, False, False, -101, -11
+                return resource_id, None, None, None, None, None, None, None, -101, -11
 
     async def check_urls(self, resources_to_check: List[Tuple]) -> Dict[str, Tuple]:
         """Asynchronous code to get HTTP headers of resources. Return
@@ -298,6 +317,7 @@ class Retrieval:
                     final_hash,
                     sig_match,
                     mime_match,
+                    size_match,
                     http_status,
                     status,
                 ) = await f
@@ -309,6 +329,7 @@ class Retrieval:
                     final_hash,
                     sig_match,
                     mime_match,
+                    size_match,
                     http_status,
                     status,
                 )
