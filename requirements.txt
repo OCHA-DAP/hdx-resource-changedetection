@@ -57,7 +57,7 @@ frozenlist==1.8.0
     # via
     #   aiohttp
     #   aiosignal
-google-auth==2.45.0
+google-auth==2.46.0
     # via
     #   google-auth-oauthlib
     #   gspread
@@ -76,7 +76,7 @@ hdx-python-country==3.9.8
     #   hdx-python-scraper
 hdx-python-scraper==2.6.5
     # via hdx-resource-changedetection (pyproject.toml)
-hdx-python-utilities==3.9.7
+hdx-python-utilities==3.9.9
     # via
     #   hdx-resource-changedetection (pyproject.toml)
     #   hdx-python-api
@@ -117,7 +117,7 @@ makefun==1.16.0
     # via hdx-python-api
 markdown-it-py==4.0.0
     # via rich
-marko==2.2.1
+marko==2.2.2
     # via frictionless
 markupsafe==3.0.3
     # via jinja2

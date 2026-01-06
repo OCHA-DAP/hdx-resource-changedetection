@@ -104,7 +104,7 @@ frozenlist==1.8.0
     #   -c requirements.txt
     #   aiohttp
     #   aiosignal
-google-auth==2.45.0
+google-auth==2.46.0
     # via
     #   -c requirements.txt
     #   google-auth-oauthlib
@@ -132,7 +132,7 @@ hdx-python-scraper==2.6.5
     # via
     #   -c requirements.txt
     #   hdx-resource-changedetection (pyproject.toml)
-hdx-python-utilities==3.9.7
+hdx-python-utilities==3.9.9
     # via
     #   -c requirements.txt
     #   hdx-resource-changedetection (pyproject.toml)
@@ -201,7 +201,7 @@ markdown-it-py==4.0.0
     # via
     #   -c requirements.txt
     #   rich
-marko==2.2.1
+marko==2.2.2
     # via
     #   -c requirements.txt
     #   frictionless

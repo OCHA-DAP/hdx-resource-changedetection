@@ -110,7 +110,7 @@ class TaskManager:
                     pipeline.multi()
                     pipeline.hset(key, mapping=mapping)
                     pipeline.expire(key, 7 * 24 * 60 * 60)  # Set TTL to 1 week
-                    result = await pipeline.execute()
+                    _ = await pipeline.execute()
 
                     # Successfully acquired the task atomically
                     logger.info(log_message)
