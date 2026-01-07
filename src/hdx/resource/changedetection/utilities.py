@@ -1,6 +1,6 @@
 import logging
 from http import HTTPStatus
-from typing import Dict, Optional
+from typing import Dict
 
 import aiohttp
 from prettytable import PrettyTable
@@ -94,12 +94,10 @@ def revise_resource(
     datasets_to_revise: Dict,
     dataset_id: str,
     resource_id: str,
-    resource_info: Optional[Dict] = None,
+    resource_info: Dict,
 ) -> None:
     dataset_to_revise = datasets_to_revise.get(dataset_id, {})
     dataset_to_revise["match"] = {"id": dataset_id}
-    if resource_info is None:
-        resource_info = {"broken_link": True}
     if "broken_link" not in resource_info:
         resource_info["broken_link"] = False
     dataset_to_revise[f"update__resources__{resource_id}"] = resource_info

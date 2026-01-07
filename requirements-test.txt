@@ -113,7 +113,7 @@ gspread==6.2.1
     # via
     #   -c requirements.txt
     #   hdx-python-scraper
-hdx-python-api==6.5.6
+hdx-python-api==6.5.7
     # via
     #   -c requirements.txt
     #   hdx-resource-changedetection (pyproject.toml)

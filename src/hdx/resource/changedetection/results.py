@@ -79,7 +79,10 @@ class Results:
                 if (
                     http_status != HTTPStatus.TOO_MANY_REQUESTS and not existing_broken
                 ):  # currently broken
-                    revise_resource(self._datasets_to_revise, dataset_id, resource_id)
+                    resource_info = {"broken_link": True}
+                    revise_resource(
+                        self._datasets_to_revise, dataset_id, resource_id, resource_info
+                    )
                     log_status["Set Broken"] = "Y"
                 resource_status[resource_id] = log_status
                 continue
