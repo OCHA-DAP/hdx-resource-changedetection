@@ -1,4 +1,4 @@
-"""Utility to dpwnload and hash resources. Uses asyncio."""
+"""Utility to download and hash resources. Uses asyncio."""
 
 import asyncio
 import hashlib

@@ -23,8 +23,6 @@ backports-zstd==1.3.0
     # via aiohttp
 brotli==1.2.0
     # via aiohttp
-cachetools==6.2.4
-    # via google-auth
 certifi==2026.1.4
     # via requests
 cffi==2.0.0
@@ -57,7 +55,7 @@ frozenlist==1.8.0
     # via
     #   aiohttp
     #   aiosignal
-google-auth==2.46.0
+google-auth==2.47.0
     # via
     #   google-auth-oauthlib
     #   gspread
@@ -250,7 +248,7 @@ tqdm==4.67.1
     # via hdx-resource-changedetection (pyproject.toml)
 typeguard==4.4.4
     # via inflect
-typer==0.21.0
+typer==0.21.1
     # via frictionless
 typing-extensions==4.15.0
     # via
