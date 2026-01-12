@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 
 zip_signature = b"PK\x03\x04"
 
@@ -23,7 +23,7 @@ mimetypes = {
 }
 
 
-def check_signature(signature: bytes, resource_format: str) -> Optional[bool]:
+def check_signature(signature: bytes, resource_format: str) -> bool | None:
     if "zipped" in resource_format:
         resource_format = "zip"
     expected_signatures = signatures.get(resource_format)
@@ -34,7 +34,7 @@ def check_signature(signature: bytes, resource_format: str) -> Optional[bool]:
     return False
 
 
-def check_mimetype(mimetype: str, resource_format: str) -> Optional[bool]:
+def check_mimetype(mimetype: str, resource_format: str) -> bool | None:
     if mimetype in ignore_mimetypes:
         return None
     if "zipped" in resource_format:
@@ -47,7 +47,7 @@ def check_mimetype(mimetype: str, resource_format: str) -> Optional[bool]:
     return False
 
 
-def get_http_size(headers: Any) -> Optional[int]:
+def get_http_size(headers: Any) -> int | None:
     content_encoding = headers.get("Content-Encoding")
     if not content_encoding:
         size = headers.get("Content-Length")
@@ -57,7 +57,7 @@ def get_http_size(headers: Any) -> Optional[int]:
 
 
 def is_xlsx_file(
-    url: str, resource_format: str, mimetype: str, xlsx_url_ignore: Optional[str]
+    url: str, resource_format: str, mimetype: str, xlsx_url_ignore: str | None
 ) -> bool:
     if (
         resource_format == "xlsx"

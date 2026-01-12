@@ -1,11 +1,10 @@
 import logging
 from datetime import datetime
 from http import HTTPStatus
-from typing import Dict, Tuple
+
+from hdx.utilities.dateparse import parse_date
 
 from .utilities import get_blank_log_status, revise_resource, status_lookup
-from hdx.utilities.dateparse import parse_date
-from hdx.utilities.typehint import ListTuple
 
 logger = logging.getLogger(__name__)
 
@@ -14,21 +13,19 @@ class Results:
     def __init__(
         self,
         today: datetime,
-        results: Dict[str, ListTuple],
-        resources: Dict[str, Tuple],
+        results: dict[str, tuple],
+        resources: dict[str, tuple],
     ) -> None:
         self._today = today
         self._results = results
         self._resources = resources
         self._datasets_to_revise = {}
 
-    def add_more_results(
-        self, results: Dict[str, ListTuple], resources: Dict[str, Tuple]
-    ):
+    def add_more_results(self, results: dict[str, tuple], resources: dict[str, tuple]):
         self._results.update(results)
         self._resources.update(resources)
 
-    def process(self, resource_status: Dict[str, Dict]) -> None:
+    def process(self, resource_status: dict[str, dict]) -> None:
         for resource_id, result in self._results.items():
             log_status = get_blank_log_status()
             resource = self._resources[resource_id]
@@ -205,5 +202,5 @@ class Results:
                     log_status["Update"] = "Y"
             resource_status[resource_id] = log_status
 
-    def get_datasets_to_revise(self) -> Dict[str, Dict]:
+    def get_datasets_to_revise(self) -> dict[str, dict]:
         return self._datasets_to_revise

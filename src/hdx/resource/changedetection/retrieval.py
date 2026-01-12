@@ -4,7 +4,6 @@ import asyncio
 import hashlib
 import logging
 from timeit import default_timer as timer
-from typing import Dict, List, Optional, Set, Tuple
 from urllib.parse import urlsplit
 
 from aiohttp import (
@@ -15,6 +14,16 @@ from aiohttp import (
     TCPConnector,
 )
 from aiolimiter import AsyncLimiter
+from hdx.utilities.file_hashing import (
+    crc_zip_buffer,
+    hash_excel_buffer,
+)
+from hdx.utilities.zip_crc import (
+    get_crc_sum,
+    get_zip_cd_header,
+    get_zip_tail_header,
+    parse_central_directory,
+)
 from tenacity import (
     retry,
     retry_if_exception,
@@ -31,16 +40,6 @@ from .retrieval_utilities import (
 )
 from .tenacity_custom_wait import custom_wait
 from .utilities import is_server_error
-from hdx.utilities.file_hashing import (
-    crc_zip_buffer,
-    hash_excel_buffer,
-)
-from hdx.utilities.zip_crc import (
-    get_crc_sum,
-    get_zip_cd_header,
-    get_zip_tail_header,
-    parse_central_directory,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -57,11 +56,11 @@ class Retrieval:
     def __init__(
         self,
         user_agent: str,
-        netlocs: Set[str],
-        xlsx_url_ignore: Optional[str] = None,
+        netlocs: set[str],
+        xlsx_url_ignore: str | None = None,
     ) -> None:
         self._user_agent = user_agent
-        self._xlsx_url_ignore: Optional[str] = xlsx_url_ignore
+        self._xlsx_url_ignore: str | None = xlsx_url_ignore
         # Limit to 4 connections per second to a host
         self._rate_limiters = {netloc: AsyncLimiter(4, 1) for netloc in netlocs}
 
@@ -96,7 +95,7 @@ class Retrieval:
     @staticmethod
     async def hash_full_file(
         response: ClientResponse, signature: bytes, is_xlsx: bool
-    ) -> Tuple[str, int, int]:
+    ) -> tuple[str, int, int]:
         iterator = response.content.iter_any()
         if signature == zip_signature:
             buffer = bytearray(signature)
@@ -136,7 +135,7 @@ class Retrieval:
         resource_id: str,
         resource_format: str,
         session: ClientSession,
-    ) -> Tuple:
+    ) -> tuple:
         """Asynchronous code to get http headers for a resource. Returns a
         tuple with http headers including etag.
 
@@ -241,9 +240,9 @@ class Retrieval:
 
     async def process(
         self,
-        metadata: Tuple,
+        metadata: tuple,
         session: ClientSession,
-    ) -> Tuple:
+    ) -> tuple:
         """Asynchronous code to get http headers for a resource with rate
         limiting and exception handling. Returns a tuple with http headers
         including etag.
@@ -282,7 +281,7 @@ class Retrieval:
                 logger.error(ex)
                 return resource_id, None, None, None, None, None, None, None, -101, -11
 
-    async def check_urls(self, resources_to_check: List[Tuple]) -> Dict[str, Tuple]:
+    async def check_urls(self, resources_to_check: list[tuple]) -> dict[str, tuple]:
         """Asynchronous code to get HTTP headers of resources. Return
         dictionary with resources information including etags, last modified
         and size.
@@ -335,7 +334,7 @@ class Retrieval:
                 )
             return responses
 
-    def retrieve(self, resources_to_check: List[Tuple]) -> Dict[str, Tuple]:
+    def retrieve(self, resources_to_check: list[tuple]) -> dict[str, tuple]:
         """Get HTTP headers of resources and hash them. Return dictionary with
         resources information including etags, last modified and size.
 

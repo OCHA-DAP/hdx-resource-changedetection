@@ -4,7 +4,6 @@ import logging
 import os
 import time
 from datetime import datetime
-from typing import Dict, List, Optional
 
 import redis.asyncio as redis
 from redis.exceptions import WatchError
@@ -30,13 +29,13 @@ class TaskManager:
             health_check_interval=30,
             max_connections=5,
         )
-        self.tasks: List[str] = self.generate_tasks(task_length)
+        self.tasks: list[str] = self.generate_tasks(task_length)
         self._event_loop = asyncio.new_event_loop()
 
         logging.info(f"TaskManager initialized with instance_id: {self.instance_id}")
 
     @staticmethod
-    def generate_tasks(task_length: int = 1) -> List[str]:
+    def generate_tasks(task_length: int = 1) -> list[str]:
         """Generate a list of task identifiers as hex strings"""
         return [f"{i:0{task_length}x}" for i in range(16**task_length)]
 
@@ -45,7 +44,7 @@ class TaskManager:
         """Convert Unix timestamp to human-readable UTC format"""
         return datetime.utcfromtimestamp(timestamp).strftime("%Y-%m-%d %H:%M:%S UTC")
 
-    async def acquire_task(self) -> Optional[str]:
+    async def acquire_task(self) -> str | None:
         """Try to acquire a task atomically using WATCH/MULTI/EXEC. Returns the hex code if successful."""
         now = int(time.time())
         for task in self.tasks:
@@ -136,7 +135,7 @@ class TaskManager:
 
         return None
 
-    async def update_progress(self, task: str, progress: Dict) -> None:
+    async def update_progress(self, task: str, progress: dict) -> None:
         """Update task progress. Since only the task owner calls this, no atomic protection needed."""
         key = f"task:{task}"
         now = int(time.time())
@@ -194,7 +193,7 @@ class TaskManager:
     #         await asyncio.sleep(1)  # simulate work
     #     await self.finish_task(task)
 
-    def sync_acquire_task(self) -> Optional[str]:
+    def sync_acquire_task(self) -> str | None:
         task_code = self._event_loop.run_until_complete(self.acquire_task())
         return task_code
 

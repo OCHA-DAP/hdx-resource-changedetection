@@ -1,5 +1,5 @@
 from http import HTTPStatus
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 from aiohttp import ClientResponseError
 from tenacity import RetryCallState, _utils
@@ -28,9 +28,9 @@ class custom_wait(wait_base):
 
     def __init__(
         self,
-        multiplier: Union[int, float] = 1,
+        multiplier: int | float = 1,
         max: _utils.time_unit_type = _utils.MAX_WAIT,  # noqa
-        exp_base: Union[int, float] = 2,
+        exp_base: int | float = 2,
         min: _utils.time_unit_type = 0,  # noqa
         min_multiplier: int = 8,
         multiply_codes: tuple = (HTTPStatus.TOO_MANY_REQUESTS,),

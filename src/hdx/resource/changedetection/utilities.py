@@ -1,11 +1,9 @@
 import logging
 from http import HTTPStatus
-from typing import Dict
 
 import aiohttp
-from prettytable import PrettyTable
-
 from hdx.utilities.saver import save_iterable
+from prettytable import PrettyTable
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +20,7 @@ status_lookup.update(
 )
 
 
-def get_blank_log_status() -> Dict[str, str]:
+def get_blank_log_status() -> dict[str, str]:
     return {
         "Existing Hash": "",
         "Existing Modified": "",
@@ -48,7 +46,7 @@ def get_blank_log_status() -> Dict[str, str]:
     }
 
 
-def get_status_count(resource_status: Dict[str, str]) -> Dict[str, int]:
+def get_status_count(resource_status: dict[str, str]) -> dict[str, int]:
     status_count = {}
     for resource_id, status in resource_status.items():
         key = tuple(status.values())
@@ -56,7 +54,7 @@ def get_status_count(resource_status: Dict[str, str]) -> Dict[str, int]:
     return status_count
 
 
-def output_status_count(status_count: Dict[str, int], path: str) -> None:
+def output_status_count(status_count: dict[str, int], path: str) -> None:
     log_status = get_blank_log_status()
     table = PrettyTable()
     headers = list(log_status.keys()) + ["Number"]
@@ -91,10 +89,10 @@ def is_server_error(ex: BaseException) -> bool:
 
 
 def revise_resource(
-    datasets_to_revise: Dict,
+    datasets_to_revise: dict,
     dataset_id: str,
     resource_id: str,
-    resource_info: Dict,
+    resource_info: dict,
 ) -> None:
     dataset_to_revise = datasets_to_revise.get(dataset_id, {})
     dataset_to_revise["match"] = {"id": dataset_id}

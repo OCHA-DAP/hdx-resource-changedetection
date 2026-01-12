@@ -4,23 +4,25 @@ import logging
 from os.path import expanduser, join
 from urllib.parse import urlsplit
 
-from . import __version__
-from .config import LOOKUP, UPDATED_BY_SCRIPT, init_logging
-from .dataset_processor import DatasetProcessor
-from .results import Results
-from .retrieval import Retrieval
 from hdx.api.configuration import Configuration
 from hdx.data.user import User
 from hdx.facades.infer_arguments import facade
-from hdx.resource.changedetection.dataset_updater import DatasetUpdater
-from hdx.resource.changedetection.task_manager import TaskManager
-from hdx.resource.changedetection.utilities import get_status_count, output_status_count
 from hdx.scraper.framework.utilities.reader import Read
 from hdx.utilities.dateparse import now_utc
 from hdx.utilities.path import (
     script_dir_plus_file,
     wheretostart_tempdir_batch,
 )
+
+from hdx.resource.changedetection.dataset_updater import DatasetUpdater
+from hdx.resource.changedetection.task_manager import TaskManager
+from hdx.resource.changedetection.utilities import get_status_count, output_status_count
+
+from . import __version__
+from .config import LOOKUP, UPDATED_BY_SCRIPT, init_logging
+from .dataset_processor import DatasetProcessor
+from .results import Results
+from .retrieval import Retrieval
 
 init_logging()
 logger = logging.getLogger(__name__)

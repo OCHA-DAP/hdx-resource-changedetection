@@ -2,11 +2,11 @@ from os.path import join
 from urllib.parse import urlsplit
 
 import pytest
-
 from hdx.api.configuration import Configuration
-from hdx.resource.changedetection.__main__ import main
 from hdx.utilities.path import script_dir_plus_file
 from hdx.utilities.useragent import UserAgent
+
+from hdx.resource.changedetection.__main__ import main
 
 
 def pytest_addoption(parser):
