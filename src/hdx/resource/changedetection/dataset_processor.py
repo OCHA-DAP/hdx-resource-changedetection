@@ -1,4 +1,4 @@
-from typing import Dict, Iterable, List, Optional, Set, Tuple
+from collections.abc import Iterable
 from urllib.parse import urlsplit
 
 from hdx.api.configuration import Configuration
@@ -14,7 +14,7 @@ class DatasetProcessor:
         configuration: Configuration,
         netlocs_ignore: Iterable[str] = (),
         formats_ignore: Iterable[str] = (),
-        task_code: Optional[str] = None,
+        task_code: str | None = None,
     ):
         self._configuration = configuration
         self._netlocs = set()
@@ -23,7 +23,7 @@ class DatasetProcessor:
         self._formats_ignore = formats_ignore
         self._task_code = task_code
 
-    def get_all_datasets(self) -> List[Dataset]:
+    def get_all_datasets(self) -> list[Dataset]:
         reader = Read.get_reader()
         filters = []
         if self._task_code:
@@ -38,7 +38,7 @@ class DatasetProcessor:
             sort="metadata_created asc",
         )
 
-    def process(self, datasets: List[Dataset]) -> None:
+    def process(self, datasets: list[Dataset]) -> None:
         for dataset in datasets:
             for resource in dataset.get_resources():
                 resource_format = resource.get_format()
@@ -66,14 +66,14 @@ class DatasetProcessor:
                     broken,
                 )
 
-    def get_resources(self) -> Dict[str, Tuple]:
+    def get_resources(self) -> dict[str, tuple]:
         return self._resources
 
-    def get_distributed_resources_to_check(self) -> List[Tuple]:
+    def get_distributed_resources_to_check(self) -> list[tuple]:
         def get_netloc(x):
             return urlsplit(x[0]).netloc
 
         return list_distribute_contents(list(self._resources.values()), get_netloc)
 
-    def get_netlocs(self) -> Set[str]:
+    def get_netlocs(self) -> set[str]:
         return self._netlocs

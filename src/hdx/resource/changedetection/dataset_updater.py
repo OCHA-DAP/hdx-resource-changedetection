@@ -1,17 +1,16 @@
 import logging
-from typing import Any, Dict
-
-from tqdm import tqdm
+from typing import Any
 
 from hdx.api.configuration import Configuration
 from hdx.data.dataset import Dataset
+from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
 
 
 class DatasetUpdater:
     def __init__(
-        self, configuration: Configuration, datasets_to_revise: Dict[str, Any]
+        self, configuration: Configuration, datasets_to_revise: dict[str, Any]
     ):
         self.configuration = configuration
         self._datasets_to_revise = datasets_to_revise

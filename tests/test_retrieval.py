@@ -14,79 +14,162 @@ class TestRetrieve:
             "test",
             netlocs,
         ).retrieve(urls)
-        check.equal(result["1"], (None, None, '"cx4nhab5wy1nfr"', 200))
-        check.equal(result["2"], (None, None, None, 404))
-        check.equal(result["3"], (None, None, None, -101))
+        check.equal(
+            result["1"],
+            (
+                4862,
+                "Tue, 23 Mar 2021 17:04:04 GMT",
+                None,
+                "59f2f6123cfb7859ef71ba4cf8bcce12",
+                None,
+                None,
+                True,
+                200,
+                1,
+            ),
+        )
+        check.equal(result["2"], (None, None, None, None, None, None, None, 404, -10))
+        check.equal(result["3"], (None, None, None, None, None, None, None, -101, -11))
         check.equal(
             result["4"],
             (
+                596488,
+                "Mon, 08 Sep 2025 23:10:24 GMT",
+                '"68bf6260-91a08"',
+                '"68bf6260-91a08"',
+                True,
+                True,
                 None,
-                "Mon, 19 May 2025 23:55:10 GMT",
-                'W/"682bc4de-91a08"',
                 200,
+                5,
             ),
         )
         check.equal(
             result["5"],
-            (8461, "Mon, 19 May 2025 23:55:10 GMT", '"682bc4de-210d"', 200),
+            (
+                8461,
+                "Mon, 08 Sep 2025 23:10:24 GMT",
+                '"68bf6260-210d"',
+                "914bd375",
+                True,
+                True,
+                True,
+                200,
+                3,
+            ),
         )
         check.equal(
             result["6"],
             (
+                26084,
+                "Mon, 08 Sep 2025 23:10:24 GMT",
+                '"68bf6260-65e4"',
+                '"68bf6260-65e4"',
                 None,
-                "Mon, 19 May 2025 23:55:10 GMT",
-                'W/"682bc4de-65e4"',
+                True,
+                None,
                 200,
+                5,
             ),
         )
         check.equal(
             result["7"],
             (
                 81920,
-                "Mon, 19 May 2025 23:55:10 GMT",
-                '"682bc4de-14000"',
+                "Mon, 08 Sep 2025 23:10:24 GMT",
+                '"68bf6260-14000"',
+                '"68bf6260-14000"',
+                True,
+                True,
+                None,
                 200,
+                5,
             ),
         )
         check.equal(
             result["8"],
-            (20984, "Mon, 19 May 2025 23:55:10 GMT", '"682bc4de-51f8"', 200),
+            (
+                20984,
+                "Mon, 08 Sep 2025 23:10:24 GMT",
+                '"68bf6260-51f8"',
+                "08157f501860340ef6e102e9037d1da2",
+                True,
+                True,
+                True,
+                200,
+                2,
+            ),
         )
         check.equal(
             result["9"],
-            (None, "Mon, 19 May 2025 23:55:10 GMT", 'W/"682bc4de-7e1"', 200),
+            (
+                2017,
+                "Mon, 08 Sep 2025 23:10:24 GMT",
+                '"68bf6260-7e1"',
+                '"68bf6260-7e1"',
+                None,
+                None,
+                None,
+                200,
+                5,
+            ),
         )
         check.equal(
             result["10"],
-            (None, "Mon, 19 May 2025 23:55:10 GMT", 'W/"682bc4de-7e1"', 200),
+            (
+                2017,
+                "Mon, 08 Sep 2025 23:10:24 GMT",
+                '"68bf6260-7e1"',
+                '"68bf6260-7e1"',
+                None,
+                False,
+                None,
+                200,
+                5,
+            ),
         )
         check.equal(
             result["11"],
-            (None, "Mon, 19 May 2025 23:55:10 GMT", 'W/"682bc4de-7e1"', 200),
+            (
+                2017,
+                "Mon, 08 Sep 2025 23:10:24 GMT",
+                '"68bf6260-7e1"',
+                '"68bf6260-7e1"',
+                False,
+                False,
+                None,
+                200,
+                5,
+            ),
         )
         check.equal(
             result["12"],
-            (None, None, None, 403),
+            (None, None, None, None, None, None, None, 403, -10),
         )
         check.equal(
             result["13"],
-            (None, None, None, 410),
+            (None, None, None, None, None, None, None, 410, -10),
         )
         check.equal(
             result["14"],
-            (None, None, None, -101),
+            (None, None, None, None, None, None, None, -101, -11),
         )
         check.equal(
             result["15"],
-            (None, None, None, -101),
+            (None, None, None, None, None, None, None, -101, -11),
         )
         check.equal(
             result["16"],
             (
                 30776,
                 "Thu, 11 Mar 2021 17:21:43 GMT",
+                None,
                 "abfe9f3bada6c937e8103e215c826451",
-                0,
+                None,
+                None,
+                True,
+                200,
+                1,
             ),
         )
         check.equal(
@@ -94,7 +177,40 @@ class TestRetrieve:
             (
                 1787826,
                 "Thu, 27 Jan 2022 21:30:41 GMT",
-                "09a4dd3b41c52e17a70b3b6635d6a3af",
-                0,
+                None,
+                "ca81ea9804b0c9882e2df7f9034cd1fe",
+                True,
+                None,
+                True,
+                200,
+                2,
+            ),
+        )
+        check.equal(
+            result["18"],
+            (
+                2830,
+                None,
+                '"8b4e815cc6bd3fb47121497fc2344422d5f9da2108f10c356c0d04607a141ca7"',
+                "376c95f3d2bc02ac814f5b08815fbfac",
+                True,
+                None,
+                True,
+                200,
+                4,
+            ),
+        )
+        check.equal(
+            result["19"],
+            (
+                90846092,
+                "Wed, 17 Dec 2025 18:30:23 GMT",
+                '"a7a6ecb7730590d1ff73a1d5e621cb89"',
+                "ca7df19a",
+                True,
+                True,
+                None,
+                200,
+                7,
             ),
         )

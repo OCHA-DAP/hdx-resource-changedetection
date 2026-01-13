@@ -1,11 +1,9 @@
 import logging
 from http import HTTPStatus
-from typing import Dict
 
 import aiohttp
+from hdx.utilities.saver import save_iterable
 from prettytable import PrettyTable
-
-from hdx.utilities.dictandlist import write_list_to_csv
 
 logger = logging.getLogger(__name__)
 
@@ -22,32 +20,33 @@ status_lookup.update(
 )
 
 
-def get_blank_log_status() -> Dict[str, str]:
+def get_blank_log_status() -> dict[str, str]:
     return {
         "Existing Hash": "",
         "Existing Modified": "",
         "Existing Size": "",
         "Existing Broken": "",
+        "HTTP Status": "",
+        "Sig Match": "",
+        "Mime Match": "",
+        "Size Match": "",
         "Set Broken": "N",
-        "Head Status": "",
-        "Head Error": "",
-        "Get Status": "",
-        "Get Error": "",
-        "New ETag": "",
-        "ETag Changed": "",
-        "New Modified": "",
+        "Has ETag": "",
+        "Has Modified": "",
         "Modified Changed": "",
         "Modified Newer": "",
         "Modified Value": "",
-        "New Size": "",
+        "Has Size": "",
         "Size Changed": "",
-        "New Hash": "",
+        "Has Hash": "",
         "Hash Changed": "",
+        "Hash Type": "",
         "Update": "N",
+        "Error": "",
     }
 
 
-def get_status_count(resource_status: Dict[str, str]) -> Dict[str, int]:
+def get_status_count(resource_status: dict[str, str]) -> dict[str, int]:
     status_count = {}
     for resource_id, status in resource_status.items():
         key = tuple(status.values())
@@ -55,7 +54,7 @@ def get_status_count(resource_status: Dict[str, str]) -> Dict[str, int]:
     return status_count
 
 
-def output_status_count(status_count: Dict[str, int], path: str) -> None:
+def output_status_count(status_count: dict[str, int], path: str) -> None:
     log_status = get_blank_log_status()
     table = PrettyTable()
     headers = list(log_status.keys()) + ["Number"]
@@ -67,7 +66,7 @@ def output_status_count(status_count: Dict[str, int], path: str) -> None:
         rows.append(row)
     print(table)
     if path:
-        write_list_to_csv(path, rows)
+        save_iterable(path, rows)
 
 
 def is_server_error(ex: BaseException) -> bool:
@@ -90,12 +89,14 @@ def is_server_error(ex: BaseException) -> bool:
 
 
 def revise_resource(
-    datasets_to_revise: Dict,
+    datasets_to_revise: dict,
     dataset_id: str,
     resource_id: str,
-    resource_info: Dict = {"broken_link": True},
+    resource_info: dict,
 ) -> None:
     dataset_to_revise = datasets_to_revise.get(dataset_id, {})
     dataset_to_revise["match"] = {"id": dataset_id}
+    if "broken_link" not in resource_info:
+        resource_info["broken_link"] = False
     dataset_to_revise[f"update__resources__{resource_id}"] = resource_info
     datasets_to_revise[dataset_id] = dataset_to_revise

@@ -2,11 +2,11 @@ from os.path import join
 from urllib.parse import urlsplit
 
 import pytest
-
 from hdx.api.configuration import Configuration
-from hdx.resource.changedetection.__main__ import main
 from hdx.utilities.path import script_dir_plus_file
 from hdx.utilities.useragent import UserAgent
+
+from hdx.resource.changedetection.__main__ import main
 
 
 def pytest_addoption(parser):
@@ -38,7 +38,7 @@ def pytest_runtest_setup(item):
 
 @pytest.fixture(scope="session")
 def urls():
-    url1 = "https://aliweb.com"
+    url1 = "https://www.fogcam.org/"
     url2 = "https://github.com/mcarans/hdx-data-freshness/raw/d1616d76c3b6b8ef5029eb6964b93cde688efd53/tests/fixtures/day0/notfound"  # 404 not found
     url3 = "file://lala:10"
     url4 = "https://ocha-dap.github.io/hdx-data-freshness/tests/fixtures/retrieve/COD_MOZ_Admin0.geojson"
@@ -53,6 +53,8 @@ def urls():
     url13 = "http://drm.moha.gov.np/layers/"  # misformatted domain name
     url14 = "https://drive.google.com/uc?export=download&id=1yK5olSSLBKmfE0T_EgTP_d8l-lTFfz1I"  # hashed
     url15 = "https://drive.google.com/uc?export=download&id=139nYi36M_m8WsUCAIetOEbMAvQIv-YG3"  # hashed
+    url16 = "https://raw.githubusercontent.com/OCHA-DAP/hdx-python-utilities/refs/heads/main/tests/fixtures/file_hashing/bad_index.xlsx"
+    url17 = "https://data.humdata.org/dataset/bcf8a4bb-5253-4065-ae34-6e8cdcb90d57/resource/fbadf0c3-ff99-4cad-91a6-010d3b028e84/download/daily_tmax_cnt_tmaxgt30c_01.zip"
     return [
         (url1, "1", "html"),
         (url2, "2", "csv"),
@@ -71,6 +73,8 @@ def urls():
         (url13, "15", "geojson"),
         (url14, "16", "csv"),
         (url15, "17", "xlsx"),
+        (url16, "18", "xlsx"),
+        (url17, "19", "zip"),
     ]
 
 

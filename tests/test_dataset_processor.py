@@ -2,10 +2,11 @@ from datetime import datetime, timezone
 from os.path import join
 from urllib.parse import urlsplit
 
-from hdx.resource.changedetection.dataset_processor import DatasetProcessor
 from hdx.scraper.framework.utilities.reader import Read
 from hdx.utilities.dateparse import parse_date
 from hdx.utilities.path import temp_dir
+
+from hdx.resource.changedetection.dataset_processor import DatasetProcessor
 
 
 class TestDatasetProcessor:
