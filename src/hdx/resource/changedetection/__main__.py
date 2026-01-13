@@ -39,12 +39,12 @@ def main(
     """Generate datasets and create them in HDX
 
     Args:
-        save (bool): Save downloaded data. Defaults to False.
-        use_saved (bool): Use saved data. Defaults to False.
-        csv_path (str): Path to CSV file. Defaults to "" (don't generate)
-        revise (bool): Whether to revise datasets. Defaults to False.
-        use_redis (bool): Whether to use redis and split job into tasks. Defaults to False.
-        specific_task_code (str): Specific task code to run. Defaults to None (run all tasks).
+        save: Save downloaded data. Defaults to False.
+        use_saved: Use saved data. Defaults to False.
+        csv_path: Path to CSV file. Defaults to "" (don't generate)
+        revise: Whether to revise datasets. Defaults to False.
+        use_redis: Whether to use redis and split job into tasks. Defaults to False.
+        specific_task_code: Specific task code to run. Defaults to None (run all tasks).
     Returns:
         None
     """
