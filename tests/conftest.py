@@ -6,7 +6,7 @@ from hdx.api.configuration import Configuration
 from hdx.utilities.path import script_dir_plus_file
 from hdx.utilities.useragent import UserAgent
 
-from hdx.resource.changedetection.__main__ import main
+from hdx.resource.changedetection.cli import run_cli
 
 
 def pytest_addoption(parser):
@@ -90,7 +90,7 @@ def configuration():
         hdx_read_only=True,
         hdx_site="prod",
         project_config_yaml=script_dir_plus_file(
-            join("config", "project_configuration.yaml"), main
+            join("config", "project_configuration.yaml"), run_cli
         ),
     )
     return Configuration.read()

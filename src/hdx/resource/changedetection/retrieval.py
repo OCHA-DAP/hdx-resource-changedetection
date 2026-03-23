@@ -108,11 +108,12 @@ class Retrieval:
 
             # Read into the buffer, but strictly monitor the size
             async for chunk in iterator:
-                buffer.extend(chunk)
-                size += len(chunk)
-                if size > MEMORY_LIMIT:
+                newsize = size + len(chunk)
+                if newsize > MEMORY_LIMIT:
                     buffer_exceeded = True
                     break  # Abort buffering!
+                size = newsize
+                buffer.extend(chunk)
 
             # Guardrail: If it's too big, fall back to streaming MD5
             if buffer_exceeded:
@@ -368,7 +369,6 @@ class Retrieval:
                     http_status,
                     status,
                 )
-        await asyncio.sleep(0.25)
         return responses
 
     def retrieve(self, resources_to_check: list[tuple]) -> dict[str, tuple]:

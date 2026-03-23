@@ -58,6 +58,9 @@ dev = [
 ]
 
 
+[project.scripts]
+hdx-resource-changedetection = "hdx.resource.changedetection.cli:run_cli"
+
 [project.urls]
 Homepage = "https://github.com/OCHA-DAP/hdx-resource-changedetection"
 

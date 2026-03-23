@@ -1,32 +1,34 @@
 # --- Stage 1: Build & Install ---
 FROM public.ecr.aws/unocha/python:3.13-stable AS builder
 
-# 1. Install git so hatch-vcs/setuptools_scm can determine the project version
+# git is required for versioning via hatch-vcs
 RUN apk add --no-cache git
 
-# 2. Install uv directly from astral's official image
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.10.12 /uv /uvx /bin/
 
-WORKDIR /app
+WORKDIR /srv/hdx-resource-changedetection
 
-# Enable bytecode compilation for faster startups
 ENV UV_COMPILE_BYTECODE=1
-# Prevent uv from looking for a system python it can't modify
 ENV UV_LINK_MODE=copy
 
-# 3. Copy ONLY dependency files first to maximize Docker layer caching
+# 1. Copy only dependency locks first for layer caching
 COPY pyproject.toml uv.lock ./
 
-# 4. Install dependencies into a .venv (without the project code yet)
+# 2. Install dependencies without the project code
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev --no-install-project
 
-# 5. Copy the rest of the code (Make sure your .dockerignore allows the .git folder!)
+# 3. Copy the rest of the codebase
 COPY . .
 
-# 6. Sync the project itself (This builds your package using git for the version)
+# 4. Build and install the project non-editably into the .venv
+# This creates the _version.py file inside the built wheel in .venv/site-packages
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-dev
+    uv sync --frozen --no-dev --no-editable
+
+# 5. CRITICAL: Delete the raw source tree so it doesn't shadow the installed package!
+# Other folders like `config/` or `docker/` will remain untouched.
+RUN rm -rf src/
 
 
 # --- Stage 2: Final Runtime ---
@@ -34,21 +36,21 @@ FROM public.ecr.aws/unocha/python:3.13-stable
 
 WORKDIR /srv/hdx-resource-changedetection
 
-# 7. Copy the entire isolated virtual environment from the builder
-COPY --from=builder /app/.venv /app/.venv
+# 6. Copy the environment (which no longer contains the unbuilt src/ directory)
+COPY --from=builder /srv/hdx-resource-changedetection /srv/hdx-resource-changedetection
 
-# 8. Copy your application code and entrypoint
-COPY . .
-COPY docker/entrypoint.sh /
+# 7. Copy entrypoint to the root, exactly as the old Hatch Dockerfile did
+COPY docker/entrypoint.sh /entrypoint.sh
 
-# 9. Setup system dependencies and permissions
+# 8. Install system dependencies and create log directories (Matching old Dockerfile)
 RUN apk add --no-cache gettext-envsubst && \
     mkdir -p /var/log/hdx-resource-changedetection && \
     chmod +x /entrypoint.sh
 
-# 10. Activate the virtual environment by placing its bin directory first in PATH
-ENV PATH="/app/.venv/bin:$PATH"
+# 9. Prepend the .venv to the PATH
+ENV PATH="/srv/hdx-resource-changedetection/.venv/bin:$PATH"
 ENV PYTHONUNBUFFERED=1
 
 ENTRYPOINT [ "/entrypoint.sh" ]
+
 CMD ["-c", "print('HDX Resource Change Detection')"]
