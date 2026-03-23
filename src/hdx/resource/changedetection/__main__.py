@@ -14,15 +14,14 @@ from hdx.utilities.path import (
     wheretostart_tempdir_batch,
 )
 
-from hdx.resource.changedetection.dataset_updater import DatasetUpdater
-from hdx.resource.changedetection.task_manager import TaskManager
-from hdx.resource.changedetection.utilities import get_status_count, output_status_count
-
 from . import __version__
 from .config import LOOKUP, UPDATED_BY_SCRIPT, init_logging
 from .dataset_processor import DatasetProcessor
 from .results import Results
 from .retrieval import Retrieval
+from hdx.resource.changedetection.dataset_updater import DatasetUpdater
+from hdx.resource.changedetection.task_manager import TaskManager
+from hdx.resource.changedetection.utilities import get_status_count, output_status_count
 
 init_logging()
 logger = logging.getLogger(__name__)

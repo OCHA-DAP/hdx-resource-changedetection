@@ -43,6 +43,9 @@ from .utilities import is_server_error
 
 logger = logging.getLogger(__name__)
 
+# Set hard memory limit for the buffer (400 MB)
+MEMORY_LIMIT = 419430400
+
 
 class Retrieval:
     """Retrieval class for downloading and hashing resources.
@@ -97,25 +100,50 @@ class Retrieval:
         response: ClientResponse, signature: bytes, is_xlsx: bool
     ) -> tuple[str, int, int]:
         iterator = response.content.iter_any()
+
         if signature == zip_signature:
             buffer = bytearray(signature)
+            size = len(signature)
+            buffer_exceeded = False
+
+            # Read into the buffer, but strictly monitor the size
             async for chunk in iterator:
                 buffer.extend(chunk)
-            size = len(buffer)
+                size += len(chunk)
+                if size > MEMORY_LIMIT:
+                    buffer_exceeded = True
+                    break  # Abort buffering!
+
+            # Guardrail: If it's too big, fall back to streaming MD5
+            if buffer_exceeded:
+                md5_stream = hashlib.md5(buffer)
+                del buffer  # Immediately free up the RAM
+
+                # Stream the remainder of the file safely to get the final MD5 and size
+                async for chunk in iterator:
+                    size += len(chunk)
+                    md5_stream.update(chunk)
+
+                # Status 1 indicates a standard MD5 stream hash was used
+                return md5_stream.hexdigest(), 1, size
+
+            # If it fit within the memory limit, proceed with specialized hashing
             if is_xlsx:
-                md5hash = hash_excel_buffer(buffer)
-                if md5hash:
+                xlhash = hash_excel_buffer(buffer)
+                if xlhash:
                     del buffer
-                    return md5hash, 2, size
+                    return xlhash, 2, size
             else:
                 crc_sum = crc_zip_buffer(buffer)
                 if crc_sum:
                     del buffer
                     return crc_sum, 3, size
+
             md5hash = hashlib.md5(buffer).hexdigest()  # fallback
             del buffer
             return md5hash, 4, size
 
+        # Non-zip files naturally stream safely chunk by chunk without a heavy buffer
         size = len(signature)
         md5hash = hashlib.md5(signature)
         async for chunk in iterator:
@@ -163,7 +191,6 @@ class Retrieval:
                 raise exception
 
             headers = response.headers
-
             last_modified = headers.get("Last-Modified")
             etag = headers.get("Etag")
             signature = await response.content.read(4)
@@ -177,17 +204,20 @@ class Retrieval:
                 url, resource_format, mimetype, self._xlsx_url_ignore
             )
 
-            # server can understand Range header
+            # 1. Attempt the fast CRC check FIRST, while the main stream is paused
             if accept_ranges == "bytes":
+                # If the file is > 30Mb, try getting CRC through multiple small requests
+                # If not, it's probably cheaper to download it all
                 if (
                     http_size
                     and http_size > 31457280
                     and signature == zip_signature
                     and not is_xlsx
                 ):
-                    response.close()
                     final_hash = await self.get_async_crc_sum(session, url, http_size)
                     if final_hash:
+                        # SUCCESS: Returning here naturally exits the context manager,
+                        # gracefully aborting the rest of the 30MB+ download.
                         return (
                             resource_id,
                             http_size,
@@ -200,10 +230,12 @@ class Retrieval:
                             http_status,
                             7,
                         )
-                # if the file is < 30Mb, it's probably cheaper to download it all than
-                # make multiple requests
 
-            if http_size and http_size > 419430400:
+                    # FAILURE: If final_hash is "", we DO NOT close the response.
+                    # We simply fall through to the logic below.
+
+            # 2. Fallback logic (Executes if CRC failed OR conditions weren't met)
+            if http_size and http_size > MEMORY_LIMIT:
                 size = http_size
                 if etag:
                     final_hash = etag  # we use etag because file is too big to hash
@@ -216,7 +248,8 @@ class Retrieval:
                 size = http_size
                 status = 5
             else:
-                # returns a status of 1, 2, 3 or 4
+                # 3. FULL FILE HASH: The response stream is still valid and open.
+                # hash_full_file returns a status of 1, 2, 3 or 4
                 final_hash, status, size = await self.hash_full_file(
                     response, signature, is_xlsx
                 )
@@ -225,6 +258,7 @@ class Retrieval:
                         size_match = True
                     else:
                         size_match = False  # size mismatch
+
             return (
                 resource_id,
                 size,
@@ -298,6 +332,7 @@ class Retrieval:
         conn = TCPConnector(limit_per_host=10)
         # Can set some timeouts here if needed
         timeout = ClientTimeout(total=5 * 60, sock_connect=30)
+
         async with ClientSession(
             connector=conn,
             timeout=timeout,
@@ -306,6 +341,7 @@ class Retrieval:
             for metadata in resources_to_check:
                 task = self.process(metadata, session)
                 tasks.append(task)
+
             responses = {}
             for f in tqdm_asyncio.as_completed(tasks, total=len(tasks)):
                 (
@@ -332,7 +368,8 @@ class Retrieval:
                     http_status,
                     status,
                 )
-            return responses
+        await asyncio.sleep(0.25)
+        return responses
 
     def retrieve(self, resources_to_check: list[tuple]) -> dict[str, tuple]:
         """Get HTTP headers of resources and hash them. Return dictionary with
