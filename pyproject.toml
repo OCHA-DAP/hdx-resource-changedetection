@@ -48,7 +48,15 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = ["pytest", "pytest-check", "pytest-cov", "pytest-asyncio", "pre-commit"]
+dev = [
+    "pytest",
+    "pytest-check",
+    "pytest-cov",
+    "pytest-asyncio",
+    "pre-commit",
+    "ruff==0.15.7",
+]
+
 
 [project.urls]
 Homepage = "https://github.com/OCHA-DAP/hdx-resource-changedetection"
