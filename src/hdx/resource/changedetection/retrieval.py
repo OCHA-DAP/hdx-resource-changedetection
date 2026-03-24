@@ -104,31 +104,30 @@ class Retrieval:
         if signature == zip_signature:
             buffer = bytearray(signature)
             size = len(signature)
-            buffer_exceeded = False
 
             # Read into the buffer, but strictly monitor the size
             async for chunk in iterator:
                 newsize = size + len(chunk)
+
                 if newsize > MEMORY_LIMIT:
-                    buffer_exceeded = True
-                    break  # Abort buffering!
+                    # --- TRANSITION TO STREAMING ---
+                    md5_stream = hashlib.md5(buffer)
+                    md5_stream.update(chunk)  # Don't lose the current chunk!
+                    size = newsize
+                    del buffer  # Free memory immediately
+
+                    # Continue streaming the remainder of the file
+                    async for remaining_chunk in iterator:
+                        size += len(remaining_chunk)
+                        md5_stream.update(remaining_chunk)
+
+                    return md5_stream.hexdigest(), 1, size
+
+                # If still under limit, keep buffering
                 size = newsize
                 buffer.extend(chunk)
 
-            # Guardrail: If it's too big, fall back to streaming MD5
-            if buffer_exceeded:
-                md5_stream = hashlib.md5(buffer)
-                del buffer  # Immediately free up the RAM
-
-                # Stream the remainder of the file safely to get the final MD5 and size
-                async for chunk in iterator:
-                    size += len(chunk)
-                    md5_stream.update(chunk)
-
-                # Status 1 indicates a standard MD5 stream hash was used
-                return md5_stream.hexdigest(), 1, size
-
-            # If it fit within the memory limit, proceed with specialized hashing
+            # If the loop finishes naturally, the file fit in memory
             if is_xlsx:
                 xlhash = hash_excel_buffer(buffer)
                 if xlhash:
@@ -178,11 +177,16 @@ class Retrieval:
             Tuple: Resource information including hash
         """
 
+        # ==========================================
+        # STEP 1: THE PROBE
+        # Read headers and the 4-byte signature, then immediately
+        # close the block to free the connection pool.
+        # ==========================================
         async with session.get(
             url, headers={"Accept-Encoding": "identity"}, allow_redirects=True
         ) as response:
             http_status = response.status
-            if http_status != 200:
+            if http_status not in (200, 206):
                 exception = ClientResponseError(
                     code=http_status,
                     message=response.reason,
@@ -194,71 +198,105 @@ class Retrieval:
             headers = response.headers
             last_modified = headers.get("Last-Modified")
             etag = headers.get("Etag")
-            signature = await response.content.read(4)
-            sig_match = check_signature(signature, resource_format)
             mimetype = headers.get("Content-Type")
-            mime_match = check_mimetype(mimetype, resource_format)
             http_size = get_http_size(headers)
-            size_match = None
             accept_ranges = headers.get("Accept-Ranges")
+
+            # Read exactly 4 bytes to check the file signature
+            signature = await response.content.read(4)
+
+            sig_match = check_signature(signature, resource_format)
+            mime_match = check_mimetype(mimetype, resource_format)
             is_xlsx = is_xlsx_file(
                 url, resource_format, mimetype, self._xlsx_url_ignore
             )
+            size_match = None
 
-            # 1. Attempt the fast CRC check FIRST, while the main stream is paused
-            if accept_ranges == "bytes":
-                # If the file is > 30Mb, try getting CRC through multiple small requests
-                # If not, it's probably cheaper to download it all
-                if (
-                    http_size
-                    and http_size > 31457280
-                    and signature == zip_signature
-                    and not is_xlsx
-                ):
-                    final_hash = await self.get_async_crc_sum(session, url, http_size)
-                    if final_hash:
-                        # SUCCESS: Returning here naturally exits the context manager,
-                        # gracefully aborting the rest of the 30MB+ download.
-                        return (
-                            resource_id,
-                            http_size,
-                            last_modified,
-                            etag,
-                            final_hash,
-                            sig_match,
-                            mime_match,
-                            size_match,
-                            http_status,
-                            7,
-                        )
+        # --- The connection is now released back to the pool ---
 
-                    # FAILURE: If final_hash is "", we DO NOT close the response.
-                    # We simply fall through to the logic below.
+        # ==========================================
+        # STEP 2: THE ACTION
+        # Now decide whether to use CRC, ETag, or do a full download.
+        # ==========================================
 
-            # 2. Fallback logic (Executes if CRC failed OR conditions weren't met)
-            if http_size and http_size > MEMORY_LIMIT:
-                size = http_size
-                if etag:
-                    final_hash = etag  # we use etag because file is too big to hash
-                    status = 6
-                else:
-                    final_hash = None
-                    status = -1  # too big to hash
-            elif etag and signature != zip_signature:
-                final_hash = etag  # we can just use the etag
-                size = http_size
-                status = 5
-            else:
-                # 3. FULL FILE HASH: The response stream is still valid and open.
-                # hash_full_file returns a status of 1, 2, 3 or 4
-                final_hash, status, size = await self.hash_full_file(
-                    response, signature, is_xlsx
+        # Action A: Fast CRC Check for large zip files
+        if (
+            accept_ranges == "bytes"
+            and http_size
+            and http_size > 31457280
+            and signature == zip_signature
+            and not is_xlsx
+        ):
+            final_hash = await self.get_async_crc_sum(session, url, http_size)
+            if final_hash:
+                return (
+                    resource_id,
+                    http_size,
+                    last_modified,
+                    etag,
+                    final_hash,
+                    sig_match,
+                    mime_match,
+                    size_match,
+                    http_status,
+                    7,
                 )
-                if http_size:
-                    if http_size == size:
-                        size_match = True
-                    else:
-                        size_match = False  # size mismatch
+
+        # Action B: ETag Fast-Paths (Save bandwidth!)
+        if http_size and http_size > MEMORY_LIMIT and etag:
+            # Huge file + ETag exists: Trust the ETag, do not download.
+            return (
+                resource_id,
+                http_size,
+                last_modified,
+                etag,
+                etag,
+                sig_match,
+                mime_match,
+                size_match,
+                http_status,
+                6,
+            )
+
+        if etag and signature != zip_signature:
+            # Non-zip file + ETag exists: Trust the ETag.
+            # (Note: size will be None if http_size was missing from headers)
+            return (
+                resource_id,
+                http_size,
+                last_modified,
+                etag,
+                etag,
+                sig_match,
+                mime_match,
+                size_match,
+                http_status,
+                5,
+            )
+
+        # Action C: Full File Hash (Streaming Download)
+        # We explicitly open a NEW request dedicated solely to the full stream.
+        # The new hash_full_file logic will safely handle files > 400MB.
+        async with session.get(
+            url, headers={"Accept-Encoding": "identity"}, allow_redirects=True
+        ) as full_response:
+            if full_response.status not in (200, 206):
+                raise ClientResponseError(
+                    code=full_response.status,
+                    message=full_response.reason,
+                    request_info=full_response.request_info,
+                    history=full_response.history,
+                )
+
+            # Re-read the first 4 bytes so hash_full_file starts with the signature
+            new_signature = await full_response.content.read(4)
+
+            final_hash, status, size = await self.hash_full_file(
+                full_response, new_signature, is_xlsx
+            )
+
+            if http_size:
+                size_match = bool(http_size == size)
 
             return (
                 resource_id,
@@ -295,6 +333,10 @@ class Retrieval:
 
         host = urlsplit(url).netloc
 
+        # Add a fallback limiter for unknown/redirected hosts
+        if host not in self._rate_limiters:
+            self._rate_limiters[host] = AsyncLimiter(4, 1)
+
         async with self._rate_limiters[host]:
             try:
                 return await self.fetch(url, resource_id, resource_format, session)
@@ -314,7 +356,18 @@ class Retrieval:
                 )
             except Exception as ex:
                 logger.error(ex)
-                return resource_id, None, None, None, None, None, None, None, -101, -11
+                return (
+                    resource_id,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    -101,
+                    -11,
+                )
 
     async def check_urls(self, resources_to_check: list[tuple]) -> dict[str, tuple]:
         """Asynchronous code to get HTTP headers of resources. Return

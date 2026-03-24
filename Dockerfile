@@ -28,8 +28,8 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 # 5. CRITICAL: Delete the raw source tree so it doesn't shadow the installed package!
 # Other folders like `config/` or `docker/` will remain untouched.
-RUN rm -rf src/
-
+# We also delete .git and tests to prevent bloating the final runtime image.
+RUN rm -rf src/ .git/ tests/
 
 # --- Stage 2: Final Runtime ---
 FROM public.ecr.aws/unocha/python:3.13-stable

@@ -33,7 +33,6 @@ def main(
     csv_path: str = "",
     revise: bool = False,
     use_redis: bool = False,
-    specific_task_code: str = None,
 ) -> None:
     """Generate datasets and create them in HDX
 
@@ -43,7 +42,6 @@ def main(
         csv_path: Path to CSV file. Defaults to "" (don't generate)
         revise: Whether to revise datasets. Defaults to False.
         use_redis: Whether to use redis and split job into tasks. Defaults to False.
-        specific_task_code: Specific task code to run. Defaults to None (run all tasks).
     Returns:
         None
     """
