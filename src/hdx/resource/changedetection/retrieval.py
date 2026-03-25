@@ -355,7 +355,7 @@ class Retrieval:
                     -10,
                 )
             except Exception as ex:
-                logger.error(ex)
+                logger.error(f"Unexpected error processing {resource_id}: {repr(ex)}")
                 return (
                     resource_id,
                     None,
