@@ -43,8 +43,19 @@ from .utilities import is_server_error
 
 logger = logging.getLogger(__name__)
 
-# Set hard memory limit for the buffer (400 MB)
-MEMORY_LIMIT = 419430400
+# Set maximum allowed download size for full streams (1 GB)
+MAX_DOWNLOAD_SIZE = 1073741824
+
+# Set file size threshold above which etag is used rather than hashing regardless of
+# file type
+ETAG_SIZE_THRESHOLD = 419430400
+
+# Set file size threshold above which crc is performed rather than hashing
+CRC_SIZE_THRESHOLD = 31457280
+
+# Set file size threshold above which we stream and hash xlsx and zips rather than
+# trying to hold in memory
+ZIP_SIZE_THRESHOLD = 104857600
 
 
 class Retrieval:
@@ -109,7 +120,7 @@ class Retrieval:
             async for chunk in iterator:
                 newsize = size + len(chunk)
 
-                if newsize > MEMORY_LIMIT:
+                if newsize > ZIP_SIZE_THRESHOLD:
                     # --- TRANSITION TO STREAMING ---
                     md5_stream = hashlib.md5(buffer)
                     md5_stream.update(chunk)  # Don't lose the current chunk!
@@ -176,24 +187,22 @@ class Retrieval:
         Returns:
             Tuple: Resource information including hash
         """
+        try_crc = False
 
         # ==========================================
-        # STEP 1: THE PROBE
-        # Read headers and the 4-byte signature, then immediately
-        # close the block to free the connection pool.
+        # STEP 1: INITIAL PROBE & STREAM
         # ==========================================
         async with session.get(
             url, headers={"Accept-Encoding": "identity"}, allow_redirects=True
         ) as response:
             http_status = response.status
-            if http_status not in (200, 206):
-                exception = ClientResponseError(
+            if http_status != 200:
+                raise ClientResponseError(
                     code=http_status,
                     message=response.reason,
                     request_info=response.request_info,
                     history=response.history,
                 )
-                raise exception
 
             headers = response.headers
             last_modified = headers.get("Last-Modified")
@@ -202,7 +211,6 @@ class Retrieval:
             http_size = get_http_size(headers)
             accept_ranges = headers.get("Accept-Ranges")
 
-            # Read exactly 4 bytes to check the file signature
             signature = await response.content.read(4)
 
             sig_match = check_signature(signature, resource_format)
@@ -212,21 +220,87 @@ class Retrieval:
             )
             size_match = None
 
-        # --- The connection is now released back to the pool ---
+            # PRIORITY 1: Does it need a CRC check?
+            if (
+                accept_ranges == "bytes"
+                and http_size
+                and http_size > CRC_SIZE_THRESHOLD
+                and signature == zip_signature
+                and not is_xlsx
+            ):
+                # Flag it and naturally exit the async with block to free the connection pool!
+                try_crc = True
+
+                # If NO CRC is needed, process immediately using this already-open connection!
+            else:
+                # PRIORITY 2: ETag Fast-Paths
+                if http_size and http_size > ETAG_SIZE_THRESHOLD and etag:
+                    return (
+                        resource_id,
+                        http_size,
+                        last_modified,
+                        etag,
+                        etag,
+                        sig_match,
+                        mime_match,
+                        size_match,
+                        http_status,
+                        6,
+                    )
+
+                if etag and signature != zip_signature:
+                    return (
+                        resource_id,
+                        http_size,
+                        last_modified,
+                        etag,
+                        etag,
+                        sig_match,
+                        mime_match,
+                        size_match,
+                        http_status,
+                        5,
+                    )
+
+                # PRIORITY 3: Hard cap for massive files without ETags
+                if http_size and http_size > MAX_DOWNLOAD_SIZE:
+                    return (
+                        resource_id,
+                        http_size,
+                        last_modified,
+                        etag,
+                        None,
+                        sig_match,
+                        mime_match,
+                        size_match,
+                        http_status,
+                        -1,
+                    )
+
+                # PRIORITY 4: Full File Hash (Streaming on the ORIGINAL connection)
+                final_hash, status, size = await self.hash_full_file(
+                    response, signature, is_xlsx
+                )
+                if http_size:
+                    size_match = bool(http_size == size)
+                return (
+                    resource_id,
+                    size,
+                    last_modified,
+                    etag,
+                    final_hash,
+                    sig_match,
+                    mime_match,
+                    size_match,
+                    http_status,
+                    status,
+                )
 
         # ==========================================
-        # STEP 2: THE ACTION
-        # Now decide whether to use CRC, ETag, or do a full download.
+        # STEP 2: DEFERRED CRC & FALLBACKS
+        # (We only reach here if try_crc == True. The original connection is safely closed).
         # ==========================================
-
-        # Action A: Fast CRC Check for large zip files
-        if (
-            accept_ranges == "bytes"
-            and http_size
-            and http_size > 31457280
-            and signature == zip_signature
-            and not is_xlsx
-        ):
+        if try_crc:
             final_hash = await self.get_async_crc_sum(session, url, http_size)
             if final_hash:
                 return (
@@ -242,74 +316,70 @@ class Retrieval:
                     7,
                 )
 
-        # Action B: ETag Fast-Paths (Save bandwidth!)
-        if http_size and http_size > MEMORY_LIMIT and etag:
-            # Huge file + ETag exists: Trust the ETag, do not download.
-            return (
-                resource_id,
-                http_size,
-                last_modified,
-                etag,
-                etag,
-                sig_match,
-                mime_match,
-                size_match,
-                http_status,
-                6,
-            )
+            # --- YOUR FALLBACK LOGIC RESTORED ---
 
-        if etag and signature != zip_signature:
-            # Non-zip file + ETag exists: Trust the ETag.
-            # (Note: size will be None if http_size was missing from headers)
-            return (
-                resource_id,
-                http_size,
-                last_modified,
-                etag,
-                etag,
-                sig_match,
-                mime_match,
-                size_match,
-                http_status,
-                5,
-            )
-
-        # Action C: Full File Hash (Streaming Download)
-        # We explicitly open a NEW request dedicated solely to the full stream.
-        # The new hash_full_file logic will safely handle files > 400MB.
-        async with session.get(
-            url, headers={"Accept-Encoding": "identity"}, allow_redirects=True
-        ) as full_response:
-            if full_response.status not in (200, 206):
-                raise ClientResponseError(
-                    code=full_response.status,
-                    message=full_response.reason,
-                    request_info=full_response.request_info,
-                    history=full_response.history,
+            # Fallback 1: ETag if massive
+            if http_size and http_size > ETAG_SIZE_THRESHOLD and etag:
+                return (
+                    resource_id,
+                    http_size,
+                    last_modified,
+                    etag,
+                    etag,
+                    sig_match,
+                    mime_match,
+                    size_match,
+                    http_status,
+                    6,
                 )
 
-            # Re-read the first 4 bytes so hash_full_file starts with the signature
-            new_signature = await full_response.content.read(4)
+            # Fallback 2: Hard cap for massive files without ETags
+            if http_size and http_size > MAX_DOWNLOAD_SIZE:
+                return (
+                    resource_id,
+                    http_size,
+                    last_modified,
+                    etag,
+                    None,
+                    sig_match,
+                    mime_match,
+                    size_match,
+                    http_status,
+                    -1,
+                )
 
-            final_hash, status, size = await self.hash_full_file(
-                full_response, new_signature, is_xlsx
-            )
+            # Fallback 3: Full Hash. Must open a new connection since the first one was closed.
+            async with session.get(
+                url, headers={"Accept-Encoding": "identity"}, allow_redirects=True
+            ) as fallback_response:
+                if fallback_response.status != 200:
+                    raise ClientResponseError(
+                        code=fallback_response.status,
+                        message=fallback_response.reason,
+                        request_info=fallback_response.request_info,
+                        history=fallback_response.history,
+                    )
 
-            if http_size:
-                size_match = bool(http_size == size)
+                fallback_signature = await fallback_response.content.read(4)
+                final_hash, status, size = await self.hash_full_file(
+                    fallback_response, fallback_signature, is_xlsx
+                )
 
-            return (
-                resource_id,
-                size,
-                last_modified,
-                etag,
-                final_hash,
-                sig_match,
-                mime_match,
-                size_match,
-                http_status,
-                status,
-            )
+                if http_size:
+                    size_match = bool(http_size == size)
+
+                return (
+                    resource_id,
+                    size,
+                    last_modified,
+                    etag,
+                    final_hash,
+                    sig_match,
+                    mime_match,
+                    size_match,
+                    fallback_response.status,
+                    status,
+                )
 
     async def process(
         self,
@@ -355,7 +425,7 @@ class Retrieval:
                     -10,
                 )
             except Exception as ex:
-                logger.error(f"Unexpected error processing {resource_id}: {repr(ex)}")
+                logger.error(f"Error processing {resource_id}: {repr(ex)}")
                 return (
                     resource_id,
                     None,
@@ -385,7 +455,16 @@ class Retrieval:
         # Maximum of 10 simultaneous connections to a host
         conn = TCPConnector(limit_per_host=10)
         # Can set some timeouts here if needed
-        timeout = ClientTimeout(total=5 * 60, sock_connect=30)
+        timeout = ClientTimeout(
+            total=None,
+            # 1. Turn off the overarching wall-clock timer (includes queue wait)
+            connect=None,
+            # 2. Allow it to wait in the TCPConnector queue as long as needed
+            sock_connect=30,
+            # 3. Once it leaves the queue, fail if the TCP handshake takes > 30s
+            sock_read=30,
+            # 4. Once downloading, fail if the server stops sending data for > 30s
+        )
 
         async with ClientSession(
             connector=conn,
