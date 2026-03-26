@@ -198,7 +198,7 @@ class Retrieval:
             http_status = response.status
             if http_status != 200:
                 raise ClientResponseError(
-                    code=http_status,
+                    status=http_status,
                     message=response.reason,
                     request_info=response.request_info,
                     history=response.history,
@@ -354,7 +354,7 @@ class Retrieval:
             ) as fallback_response:
                 if fallback_response.status != 200:
                     raise ClientResponseError(
-                        code=fallback_response.status,
+                        status=fallback_response.status,
                         message=fallback_response.reason,
                         request_info=fallback_response.request_info,
                         history=fallback_response.history,
@@ -456,14 +456,10 @@ class Retrieval:
         conn = TCPConnector(limit_per_host=10)
         # Can set some timeouts here if needed
         timeout = ClientTimeout(
-            total=None,
-            # 1. Turn off the overarching wall-clock timer (includes queue wait)
-            connect=None,
-            # 2. Allow it to wait in the TCPConnector queue as long as needed
-            sock_connect=30,
-            # 3. Once it leaves the queue, fail if the TCP handshake takes > 30s
-            sock_read=30,
-            # 4. Once downloading, fail if the server stops sending data for > 30s
+            total=30 * 60,  # Absolute ceiling: 30 minutes max per task
+            connect=None,  # Allow waiting in TCPConnector queue as long as needed
+            sock_connect=30,  # After leaving queue, fail if TCP handshake takes >30s
+            sock_read=30,  # During download, fail if server stops sending data for >30s
         )
 
         async with ClientSession(
