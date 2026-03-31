@@ -5,7 +5,8 @@ from hdx.api.configuration import Configuration
 from hdx.data.dataset import Dataset
 from hdx.scraper.framework.utilities.reader import Read
 from hdx.utilities.dateparse import parse_date
-from hdx.utilities.dictandlist import list_distribute_contents
+
+from hdx.resource.changedetection.utilities import list_distribute_contents
 
 
 class DatasetProcessor:

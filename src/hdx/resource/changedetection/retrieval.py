@@ -35,6 +35,7 @@ from .retrieval_utilities import (
     check_mimetype,
     check_signature,
     get_http_size,
+    is_filestore_host,
     is_xlsx_file,
     zip_signature,
 )
@@ -55,7 +56,13 @@ CRC_SIZE_THRESHOLD = 31457280
 
 # Set file size threshold above which we stream and hash xlsx and zips rather than
 # trying to hold in memory
-ZIP_SIZE_THRESHOLD = 104857600
+ZIP_SIZE_THRESHOLD = 78643200
+
+# Set limit per host for filestore resources
+FILESTORE_LIMIT_PER_HOST = 10
+
+# Set limit per host for all other resources
+DEFAULT_LIMIT_PER_HOST = 4
 
 
 class Retrieval:
@@ -75,8 +82,14 @@ class Retrieval:
     ) -> None:
         self._user_agent = user_agent
         self._xlsx_url_ignore: str | None = xlsx_url_ignore
-        # Limit to 4 connections per second to a host
-        self._rate_limiters = {netloc: AsyncLimiter(4, 1) for netloc in netlocs}
+
+        # Apply the limit based on the host
+        self._rate_limiters = {}
+        for netloc in netlocs:
+            if is_filestore_host(netloc):
+                self._rate_limiters[netloc] = AsyncLimiter(FILESTORE_LIMIT_PER_HOST, 1)
+            else:
+                self._rate_limiters[netloc] = AsyncLimiter(DEFAULT_LIMIT_PER_HOST, 1)
 
     @retry(
         reraise=True,
@@ -405,8 +418,12 @@ class Retrieval:
 
         # Add a fallback limiter for unknown/redirected hosts
         if host not in self._rate_limiters:
-            self._rate_limiters[host] = AsyncLimiter(4, 1)
-
+            # If it's HDX, allow FILESTORE_LIMIT_PER_HOST requests per second.
+            # Otherwise, DEFAULT_LIMIT_PER_HOST requests per second.
+            if is_filestore_host(host):
+                self._rate_limiters[host] = AsyncLimiter(FILESTORE_LIMIT_PER_HOST, 1)
+            else:
+                self._rate_limiters[host] = AsyncLimiter(DEFAULT_LIMIT_PER_HOST, 1)
         async with self._rate_limiters[host]:
             try:
                 return await self.fetch(url, resource_id, resource_format, session)
@@ -451,9 +468,42 @@ class Retrieval:
             Dict[str, Tuple]: Resources information
         """
         tasks = []
+        # ==========================================
+        # 1. EVENT LOOP LIMITER
+        # ==========================================
+        # Keeps the Jenkins CPU and base memory footprint healthy by preventing
+        # thousands of tasks from being scheduled on the event loop simultaneously.
+        task_semaphore = asyncio.Semaphore(500)
 
-        # Maximum of 10 simultaneous connections to a host
-        conn = TCPConnector(limit_per_host=10)
+        # ==========================================
+        # CUSTOM PER-HOST CONCURRENCY
+        # ==========================================
+        host_semaphores = {}
+
+        # Safely pre-populate the semaphores synchronously to avoid async race conditions
+        for metadata in resources_to_check:
+            host = urlsplit(metadata[0]).netloc
+            if host not in host_semaphores:
+                if is_filestore_host(host):
+                    host_semaphores[host] = asyncio.Semaphore(FILESTORE_LIMIT_PER_HOST)
+                else:
+                    host_semaphores[host] = asyncio.Semaphore(DEFAULT_LIMIT_PER_HOST)
+
+        async def sem_process(metadata, session):
+            url = metadata[0]
+            host = urlsplit(url).netloc
+
+            async with task_semaphore:
+                # Enforce the specific limit for this host
+                async with host_semaphores[host]:
+                    return await self.process(metadata, session)
+
+        # ==========================================
+        # 2. GLOBAL CONNECTION LIMITER
+        # ==========================================
+        # limit restricts the absolute total number of active downloads across ALL hosts.
+        conn = TCPConnector(limit=13)
+
         # Can set some timeouts here if needed
         timeout = ClientTimeout(
             total=30 * 60,  # Absolute ceiling: 30 minutes max per task
@@ -467,11 +517,13 @@ class Retrieval:
             timeout=timeout,
             headers={"User-Agent": self._user_agent},
         ) as session:
+            # Queue up the tasks using the new semaphored wrapper
             for metadata in resources_to_check:
-                task = self.process(metadata, session)
+                task = asyncio.create_task(sem_process(metadata, session))
                 tasks.append(task)
 
             responses = {}
+            # Process them as they complete
             for f in tqdm_asyncio.as_completed(tasks, total=len(tasks)):
                 (
                     resource_id,

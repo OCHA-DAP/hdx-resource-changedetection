@@ -66,3 +66,8 @@ def is_xlsx_file(
     ):
         return True
     return False
+
+
+def is_filestore_host(host: str) -> bool:
+    """Check if the host is the production HDX filestore or a test server."""
+    return host == "data.humdata.org" or host.endswith(".data-humdata-org.ahconu.org")
