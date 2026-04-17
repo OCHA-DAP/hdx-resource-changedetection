@@ -13,9 +13,9 @@ class TestResults:
             "a8b51b81-1fa7-499d-a9f2-3d0bce06b5b5",
             "https://test.com/myfile.xlsx",
             "xlsx",
+            "1234",
             357102,
             datetime(2019, 11, 10, 8, 4, 26, tzinfo=timezone.utc),
-            "1234",
             False,
         )
         resources = {"1a2b": resource}
@@ -24,9 +24,9 @@ class TestResults:
             "a8b51b81-1fa7-499d-a9f2-3d0bce06b5b5",
             "https://test.com/myfile.xlsx",
             "xlsx",
+            "1234",
             357102,
             datetime(2019, 11, 10, 8, 4, 26, tzinfo=timezone.utc),
-            "1234",
             True,
         )
         broken_resources = {"1a2b": broken_resource}
@@ -456,7 +456,7 @@ class TestResults:
                 "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5": {
                     "match": {"id": "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5"},
                     "update__resources__1a2b": {
-                        "hash": "4367|1235",
+                        "hash": "1235",
                         "last_modified": "2019-11-10T08:04:27",
                         "broken_link": False,
                     },
@@ -639,9 +639,9 @@ class TestResults:
             "a8b51b81-1fa7-499d-a9f2-3d0bce06b5b5",
             "https://test.com/myfile.xlsx",
             "xlsx",
+            "1234",
             357102,
             None,
-            "1234",
             False,
         )
         resources = {"1a2b": resource}
@@ -697,7 +697,7 @@ class TestResults:
                 "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5": {
                     "match": {"id": "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5"},
                     "update__resources__1a2b": {
-                        "hash": "4867|1235",
+                        "hash": "1235",
                         "size": 419430401,
                         "last_modified": "2019-11-10T08:04:27",
                         "broken_link": False,
@@ -749,7 +749,7 @@ class TestResults:
                 "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5": {
                     "match": {"id": "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5"},
                     "update__resources__1a2b": {
-                        "hash": "4867|1235",
+                        "hash": "1235",
                         "size": 419430401,
                         "last_modified": "2019-11-10T08:04:26",
                         "broken_link": False,
@@ -962,7 +962,7 @@ class TestResults:
                 "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5": {
                     "match": {"id": "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5"},
                     "update__resources__1a2b": {
-                        "hash": "4867|1235",
+                        "hash": "1235",
                         "size": 36700160,
                         "last_modified": "2019-11-10T08:04:27",
                         "broken_link": False,
@@ -1014,7 +1014,7 @@ class TestResults:
                 "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5": {
                     "match": {"id": "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5"},
                     "update__resources__1a2b": {
-                        "hash": "4867|1235",
+                        "hash": "1235",
                         "size": 357103,
                         "last_modified": "2019-11-10T08:04:26",
                         "broken_link": False,
@@ -1024,13 +1024,13 @@ class TestResults:
         )
 
         resource = (
-            "https://test.com/myfile.xlsx",
-            "a8b51b81-1fa7-499d-a9f2-3d0bce06b5b5",
-            "xlsx",
             "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5",
+            "a8b51b81-1fa7-499d-a9f2-3d0bce06b5b5",
+            "https://test.com/myfile.xlsx",
+            "xlsx",
+            "1234",
             357102,
             datetime(2019, 11, 10, 8, 4, 26, tzinfo=timezone.utc),
-            "1234",
             False,
         )
         resources = {
@@ -1212,9 +1212,9 @@ class TestResults:
             "a8b51b81-1fa7-499d-a9f2-3d0bce06b5b6",
             "https://test2.com/myfile.xlsx",
             "xlsx",
+            "1235",
             357103,
             datetime(2019, 11, 10, 8, 4, 27, tzinfo=timezone.utc),
-            "1235",
             False,
         )
         resources = {
@@ -1378,17 +1378,17 @@ class TestResults:
                 "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e6": {
                     "match": {"id": "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e6"},
                     "update__resources__1a5b": {
-                        "hash": "4867|1234",
+                        "hash": "1234",
                         "size": 357102,
                         "broken_link": False,
                     },
                     "update__resources__1a6b": {
-                        "hash": "4867|1234",
+                        "hash": "1234",
                         "size": 357102,
                         "broken_link": False,
                     },
                     "update__resources__1a7b": {
-                        "hash": "4867|1234",
+                        "hash": "1234",
                         "size": 357102,
                         "broken_link": False,
                     },
@@ -1447,7 +1447,7 @@ class TestResults:
                 "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e6": {
                     "match": {"id": "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e6"},
                     "update__resources__1a2b": {
-                        "hash": "4867|1234",
+                        "hash": "1234",
                         "size": 357102,
                         "last_modified": "2019-11-10T08:04:26",
                         "broken_link": False,

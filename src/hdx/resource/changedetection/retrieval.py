@@ -188,27 +188,25 @@ class Retrieval:
     )
     async def fetch(
         self,
-        metadata: tuple,
+        resource_id: str,
+        url: str,
+        resource_format: str,
+        existing_hash: str,
         session: ClientSession,
     ) -> tuple:
         """Asynchronous code to get http headers for a resource. Returns a
         tuple with http headers including etag.
 
         Args:
-            metadata (tuple): Metadata about resource to get
+            resource_id (str): Resource id
+            url (str): Resource to get
+            resource_format (str): Resource format
+            existing_hash (str): Existing hash
             session (Union[ClientSession, RateLimiter]): session to use for requests
 
         Returns:
             Tuple: Resource information including hash
         """
-        resource_id = metadata[1]
-        url = metadata[2]
-        resource_format = metadata[3]
-        existing_hash = metadata[6]
-        if existing_hash and "|" in existing_hash:
-            existing_etag, existing_hash = existing_hash.split("|")
-        else:
-            existing_etag = None
         try_crc = False
 
         # ==========================================
@@ -241,23 +239,20 @@ class Retrieval:
                 url, resource_format, mimetype, self._xlsx_url_ignore
             )
             size_match = None
-            # 1: The etag equals the existing etag or existing hash (if it's in an etag)
-            if etag:
-                if (existing_etag and etag == existing_etag) or (
-                    existing_hash and etag == existing_hash
-                ):
-                    return (
-                        resource_id,
-                        http_size,
-                        last_modified,
-                        etag,
-                        existing_hash or etag,
-                        sig_match,
-                        mime_match,
-                        size_match,
-                        http_status,
-                        6,
-                    )
+            # 1: The etag equals the existing hash (if it's in an etag)
+            if etag and existing_hash and etag == existing_hash:
+                return (
+                    resource_id,
+                    http_size,
+                    last_modified,
+                    existing_hash,
+                    existing_hash,
+                    sig_match,
+                    mime_match,
+                    size_match,
+                    http_status,
+                    6,
+                )
 
             # 2: Does it need a CRC check?
             if (
@@ -438,6 +433,8 @@ class Retrieval:
         """
         resource_id = metadata[1]
         url = metadata[2]
+        resource_format = metadata[3]
+        existing_hash = metadata[4]
         host = urlsplit(url).netloc
 
         # Add a fallback limiter for unknown/redirected hosts
@@ -450,7 +447,9 @@ class Retrieval:
                 self._rate_limiters[host] = AsyncLimiter(DEFAULT_LIMIT_PER_HOST, 1)
         async with self._rate_limiters[host]:
             try:
-                return await self.fetch(metadata, session)
+                return await self.fetch(
+                    resource_id, url, resource_format, existing_hash, session
+                )
             except ClientResponseError as ex:
                 logger.error(f"{ex.status} {ex.message} {ex.request_info.url}")
                 return (

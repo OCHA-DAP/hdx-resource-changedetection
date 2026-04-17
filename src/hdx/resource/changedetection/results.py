@@ -29,26 +29,21 @@ class Results:
         for resource_id, result in self._results.items():
             log_status = get_blank_log_status()
             resource = self._resources[resource_id]
-            existing_size = resource[4]
+            existing_hash = resource[4]
+            if existing_hash:
+                log_status["Existing Hash"] = "Y"
+            else:
+                log_status["Existing Hash"] = "N"
+            existing_size = resource[5]
             if existing_size:
                 log_status["Existing Size"] = "Y"
             else:
                 log_status["Existing Size"] = "N"
-            resource_date = resource[5]
+            resource_date = resource[6]
             if resource_date:
                 log_status["Existing Modified"] = "Y"
             else:
                 log_status["Existing Modified"] = "N"
-            existing_hash = resource[6]
-            if existing_hash:
-                log_status["Existing Hash"] = "Y"
-                if "|" in existing_hash:
-                    existing_etag, existing_hash = existing_hash.split("|")
-                else:
-                    existing_etag = None
-            else:
-                log_status["Existing Hash"] = "N"
-                existing_etag = None
             existing_broken = resource[7]
             if existing_broken:
                 log_status["Existing Broken"] = "Y"
@@ -126,12 +121,9 @@ class Results:
                     case _:
                         log_status["Hash Type"] = ""
                 log_status["Has Hash"] = "Y"
-                if (etag and etag != existing_etag) or final_hash != existing_hash:
+                if final_hash != existing_hash:
                     if log_status["Hash Type"]:
-                        if etag and etag != final_hash:
-                            resource_info["hash"] = f"{etag}|{final_hash}"
-                        else:
-                            resource_info["hash"] = final_hash
+                        resource_info["hash"] = final_hash
                         hash_changed = True
                         update = True
                     log_status["Hash Changed"] = "Y"

@@ -61,9 +61,9 @@ class DatasetProcessor:
                     resource_id,
                     url,
                     resource_format,
+                    hash,
                     size,
                     last_modified,
-                    hash,
                     broken,
                 )
 
