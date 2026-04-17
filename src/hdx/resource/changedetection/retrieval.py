@@ -105,6 +105,11 @@ class Retrieval:
         async with session.get(
             url, headers=header_tail, allow_redirects=True
         ) as response:
+            if response.status != 206:
+                logger.warning(
+                    f"Server ignored Range request for tail on {url} (Status: {response.status})"
+                )
+                return ""
             tail_data = await response.read()
 
         total_records, headers_cd = get_zip_cd_header(tail_data)
@@ -183,23 +188,27 @@ class Retrieval:
     )
     async def fetch(
         self,
-        url: str,
-        resource_id: str,
-        resource_format: str,
+        metadata: tuple,
         session: ClientSession,
     ) -> tuple:
         """Asynchronous code to get http headers for a resource. Returns a
         tuple with http headers including etag.
 
         Args:
-            url (str): Resource to get
-            resource_id (str): Resource id
-            resource_format (str): Resource format
+            metadata (tuple): Metadata about resource to get
             session (Union[ClientSession, RateLimiter]): session to use for requests
 
         Returns:
             Tuple: Resource information including hash
         """
+        resource_id = metadata[1]
+        url = metadata[2]
+        resource_format = metadata[3]
+        existing_hash = metadata[6]
+        if existing_hash and "|" in existing_hash:
+            existing_etag, existing_hash = existing_hash.split("|")
+        else:
+            existing_etag = None
         try_crc = False
 
         # ==========================================
@@ -232,8 +241,25 @@ class Retrieval:
                 url, resource_format, mimetype, self._xlsx_url_ignore
             )
             size_match = None
+            # 1: The etag equals the existing etag or existing hash (if it's in an etag)
+            if etag:
+                if (existing_etag and etag == existing_etag) or (
+                    existing_hash and etag == existing_hash
+                ):
+                    return (
+                        resource_id,
+                        http_size,
+                        last_modified,
+                        etag,
+                        existing_hash or etag,
+                        sig_match,
+                        mime_match,
+                        size_match,
+                        http_status,
+                        6,
+                    )
 
-            # PRIORITY 1: Does it need a CRC check?
+            # 2: Does it need a CRC check?
             if (
                 accept_ranges == "bytes"
                 and http_size
@@ -246,7 +272,7 @@ class Retrieval:
 
                 # If NO CRC is needed, process immediately using this already-open connection!
             else:
-                # PRIORITY 2: ETag Fast-Paths
+                # 3: ETag Fast-Paths
                 if http_size and http_size > ETAG_SIZE_THRESHOLD and etag:
                     return (
                         resource_id,
@@ -275,7 +301,7 @@ class Retrieval:
                         5,
                     )
 
-                # PRIORITY 3: Hard cap for massive files without ETags
+                # 4: Hard cap for massive files without ETags
                 if http_size and http_size > MAX_DOWNLOAD_SIZE:
                     return (
                         resource_id,
@@ -290,7 +316,7 @@ class Retrieval:
                         -1,
                     )
 
-                # PRIORITY 4: Full File Hash (Streaming on the ORIGINAL connection)
+                # 5: Full File Hash (Streaming on the ORIGINAL connection)
                 final_hash, status, size = await self.hash_full_file(
                     response, signature, is_xlsx
                 )
@@ -410,10 +436,8 @@ class Retrieval:
         Returns:
             Tuple: Header information including etag
         """
-        url = metadata[0]
         resource_id = metadata[1]
-        resource_format = metadata[2]
-
+        url = metadata[2]
         host = urlsplit(url).netloc
 
         # Add a fallback limiter for unknown/redirected hosts
@@ -426,7 +450,7 @@ class Retrieval:
                 self._rate_limiters[host] = AsyncLimiter(DEFAULT_LIMIT_PER_HOST, 1)
         async with self._rate_limiters[host]:
             try:
-                return await self.fetch(url, resource_id, resource_format, session)
+                return await self.fetch(metadata, session)
             except ClientResponseError as ex:
                 logger.error(f"{ex.status} {ex.message} {ex.request_info.url}")
                 return (
@@ -482,7 +506,7 @@ class Retrieval:
 
         # Safely pre-populate the semaphores synchronously to avoid async race conditions
         for metadata in resources_to_check:
-            host = urlsplit(metadata[0]).netloc
+            host = urlsplit(metadata[2]).netloc
             if host not in host_semaphores:
                 if is_filestore_host(host):
                     host_semaphores[host] = asyncio.Semaphore(FILESTORE_LIMIT_PER_HOST)
@@ -490,7 +514,7 @@ class Retrieval:
                     host_semaphores[host] = asyncio.Semaphore(DEFAULT_LIMIT_PER_HOST)
 
         async def sem_process(metadata, session):
-            url = metadata[0]
+            url = metadata[2]
             host = urlsplit(url).netloc
 
             async with task_semaphore:

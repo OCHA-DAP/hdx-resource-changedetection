@@ -39,20 +39,20 @@ class TestDatasetProcessor:
             resources_to_check = dataset_processor.get_distributed_resources_to_check()
             assert resources_to_check == [
                 (
-                    "https://drive.google.com/uc?export=download&id=1yK5olSSLBKmfE0T_EgTP_d8l-lTFfz1I",
-                    "959e78d6-fece-4a35-a0ec-d4aef3405d4f",
-                    "csv",
                     "9d303f4b-6293-4a53-9cdb-7142fcf7f6dc",
+                    "959e78d6-fece-4a35-a0ec-d4aef3405d4f",
+                    "https://drive.google.com/uc?export=download&id=1yK5olSSLBKmfE0T_EgTP_d8l-lTFfz1I",
+                    "csv",
                     0,
                     datetime(2021, 4, 7, 1, 1, 13, tzinfo=timezone.utc),
                     "",
                     False,
                 ),
                 (
-                    "http://shapefiles.fews.net/west-africa201307.zip",
-                    "f37c3d54-41c5-45e6-a7fb-64031ceadcc3",
-                    "shp",
                     "c74d1089-08a2-487c-a27e-bcf309013c9b",
+                    "f37c3d54-41c5-45e6-a7fb-64031ceadcc3",
+                    "http://shapefiles.fews.net/west-africa201307.zip",
+                    "shp",
                     None,
                     datetime(2015, 10, 14, 19, 5, 28, tzinfo=timezone.utc),
                     "",

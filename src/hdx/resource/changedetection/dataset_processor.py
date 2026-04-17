@@ -57,10 +57,10 @@ class DatasetProcessor:
                 hash = resource.get("hash")
                 broken = resource.get("broken_link", False)
                 self._resources[resource_id] = (
-                    url,
-                    resource_id,
-                    resource_format,
                     dataset_id,
+                    resource_id,
+                    url,
+                    resource_format,
                     size,
                     last_modified,
                     hash,

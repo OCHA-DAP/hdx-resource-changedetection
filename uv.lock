@@ -1147,7 +1147,7 @@ wheels = [
 
 [[package]]
 name = "hdx-python-api"
-version = "6.6.5"
+version = "6.6.7"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ckanapi" },
@@ -1158,9 +1158,9 @@ dependencies = [
     { name = "makefun" },
     { name = "requests" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/65/52/1baa83528bb27785d9f303ab8130bc9af4b56c4915df6959add3336fe9eb/hdx_python_api-6.6.5.tar.gz", hash = "sha256:19700881264e7bede26075332df09988ba2111864bc4dbae2dc2e191780138bb", size = 535034, upload-time = "2026-02-08T21:52:52.747Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/13/18/47bc34144f7a46299b2eb3951da2b84fdb6069229f8928131ccf28d918a7/hdx_python_api-6.6.7.tar.gz", hash = "sha256:69270a6ccb9ce3cd033446d3b9919a715f491cea0469e6918ecf271daae81d3d", size = 523339, upload-time = "2026-04-07T03:37:38.16Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/1c/b3/7ec55607888a13073c9661567e7ef538d9d7bd582024a94212e054d5b15a/hdx_python_api-6.6.5-py3-none-any.whl", hash = "sha256:af91b2106cb11d648b21df6af5a03e4413c61a19ac2ac0a0d485580796ded507", size = 72515, upload-time = "2026-02-08T21:52:51.211Z" },
+    { url = "https://files.pythonhosted.org/packages/d2/98/d913ac3cf8f37dfd5bc16fdb0ce67d47cc0bf0236a56d397bf96e4099224/hdx_python_api-6.6.7-py3-none-any.whl", hash = "sha256:7dedf97e69cf16e9eaf0cff1d02be13c7daba0d390baacabd30ddbaecab7d4f6", size = 70456, upload-time = "2026-04-07T03:37:36.647Z" },
 ]
 
 [[package]]
@@ -1178,7 +1178,7 @@ wheels = [
 
 [[package]]
 name = "hdx-python-scraper"
-version = "2.7.2"
+version = "2.7.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "gspread" },
@@ -1188,9 +1188,9 @@ dependencies = [
     { name = "libhxl" },
     { name = "regex" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/fa/c2/71c4425e6522904e3b62a79b9701af31c435778d86bea26f33bf7fce4029/hdx_python_scraper-2.7.2.tar.gz", hash = "sha256:6478d3ffa1e7943f66915e2c7b12c819882fea654ef5fcd7c1157adfd2ece16d", size = 6510802, upload-time = "2026-02-11T04:27:06.27Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/7d/ae/717a3917dd18bbeab454844ddd6c007f070c37bd76c28a248be0d0fb31d6/hdx_python_scraper-2.7.3.tar.gz", hash = "sha256:70be62289b5a03fd1790d4ba304bf73256cf5a1d21dd9f4498bbe1a052a7a82f", size = 6511190, upload-time = "2026-04-12T22:28:41.615Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/4d/69/772c1fb3c95f48dd4e005b99abcd89389c311a09dde0e997f69b4a98451a/hdx_python_scraper-2.7.2-py3-none-any.whl", hash = "sha256:f5cafce68d68c814613c3fe42a5a5b289a10c35685b40544154e81284a734878", size = 56730, upload-time = "2026-02-11T04:27:04.491Z" },
+    { url = "https://files.pythonhosted.org/packages/47/66/d69e3606b2b6b68f51883f71c976ecb2387bcaaaf141cbd39efa4b420e4c/hdx_python_scraper-2.7.3-py3-none-any.whl", hash = "sha256:1cb2fc4b5665cd2f657e9dc98793e2cf7d7d2fe37405463518fc823e79567679", size = 56647, upload-time = "2026-04-12T22:28:40.055Z" },
 ]
 
 [[package]]
@@ -1249,9 +1249,9 @@ dev = [
 requires-dist = [
     { name = "aiohttp", extras = ["speedups"] },
     { name = "aiolimiter" },
-    { name = "hdx-python-api", specifier = ">=6.6.5" },
+    { name = "hdx-python-api", specifier = ">=6.6.7" },
     { name = "hdx-python-country", specifier = ">=4.1.1" },
-    { name = "hdx-python-scraper", specifier = ">=2.7.2" },
+    { name = "hdx-python-scraper", specifier = ">=2.7.3" },
     { name = "hdx-python-utilities", specifier = ">=4.0.8" },
     { name = "prettytable" },
     { name = "redis" },
