@@ -67,7 +67,7 @@ class TestResults:
                     "Size Changed": "N",
                     "Has Hash": "Y",
                     "Hash Changed": "N",
-                    "Hash Type": "md5-xl",
+                    "Hash Type": "md5-excel",
                     "Update": "N",
                     "Error": "",
                 }
@@ -104,7 +104,7 @@ class TestResults:
                     "Size Changed": "Y",
                     "Has Hash": "Y",
                     "Hash Changed": "N",
-                    "Hash Type": "md5-xl",
+                    "Hash Type": "md5-excel",
                     "Update": "Y",
                     "Error": "",
                 }
@@ -150,7 +150,7 @@ class TestResults:
                     "Size Changed": "N",
                     "Has Hash": "Y",
                     "Hash Changed": "N",
-                    "Hash Type": "md5-xl",
+                    "Hash Type": "md5-excel",
                     "Update": "N",
                     "Error": "",
                 }
@@ -183,7 +183,7 @@ class TestResults:
                     "Size Changed": "N",
                     "Has Hash": "Y",
                     "Hash Changed": "N",
-                    "Hash Type": "md5-xl",
+                    "Hash Type": "md5-excel",
                     "Update": "N",
                     "Error": "",
                 }
@@ -195,7 +195,7 @@ class TestResults:
         result[1] = "Sun, 10 Nov 2019 08:04:26 GMT"
         result[2] = "4868"
         result[3] = "4868"
-        result[8] = 5  # using etag which changed
+        result[8] = 12  # using etag which changed
         results = Results(today, results_input, resources)
         resource_status = {}
         results.process(resource_status)
@@ -223,7 +223,7 @@ class TestResults:
                     "Size Changed": "N",
                     "Has Hash": "Y",
                     "Hash Changed": "Y",
-                    "Hash Type": "etag",
+                    "Hash Type": "etag-nozip",
                     "Update": "Y",
                     "Error": "",
                 }
@@ -270,7 +270,7 @@ class TestResults:
                     "Size Changed": "N",
                     "Has Hash": "Y",
                     "Hash Changed": "Y",
-                    "Hash Type": "etag",
+                    "Hash Type": "etag-nozip",
                     "Update": "Y",
                     "Error": "",
                 }
@@ -306,7 +306,7 @@ class TestResults:
                     "Size Changed": "Y",
                     "Has Hash": "Y",
                     "Hash Changed": "N",
-                    "Hash Type": "etag",
+                    "Hash Type": "etag-nozip",
                     "Update": "Y",
                     "Error": "",
                 }
@@ -339,7 +339,7 @@ class TestResults:
                     "Size Changed": "Y",
                     "Has Hash": "Y",
                     "Hash Changed": "N",
-                    "Hash Type": "etag",
+                    "Hash Type": "etag-nozip",
                     "Update": "N",
                     "Error": "",
                 }
@@ -417,7 +417,7 @@ class TestResults:
         # modified
         result[2] = "4367"
         result[3] = "1235"
-        result[8] = 1
+        result[8] = 5
         results = Results(today, results_input, resources)
         resource_status = {"1a2b": {}}
         results.process(resource_status)
@@ -443,7 +443,7 @@ class TestResults:
                     "Size Changed": "Y",
                     "Has Hash": "Y",
                     "Hash Changed": "Y",
-                    "Hash Type": "md5",
+                    "Hash Type": "md5-zip",
                     "Update": "Y",
                     "Error": "",
                 }
@@ -654,7 +654,7 @@ class TestResults:
             True,
             None,
             200,
-            6,
+            11,
         ]
         results_input = {"1a2b": result}
         results = Results(today, results_input, resources)
@@ -684,7 +684,7 @@ class TestResults:
                     "Size Changed": "Y",
                     "Has Hash": "Y",
                     "Hash Changed": "Y",
-                    "Hash Type": "etag-sz",
+                    "Hash Type": "etag-size",
                     "Update": "Y",
                     "Error": "",
                 }
@@ -761,7 +761,7 @@ class TestResults:
         result[0] = 357102
         result[3] = "1234"
         result[6] = False
-        result[8] = 1
+        result[8] = 5
         results = Results(today, results_input, resources)
         resource_status = {"1a2b": {}}
         results.process(resource_status)
@@ -787,7 +787,7 @@ class TestResults:
                     "Size Changed": "N",
                     "Has Hash": "Y",
                     "Hash Changed": "N",
-                    "Hash Type": "md5",
+                    "Hash Type": "md5-zip",
                     "Update": "N",
                     "Error": "",
                 }
@@ -803,7 +803,7 @@ class TestResults:
 
         result[0] = 36700160  # large zip
         result[6] = None  # won't be reading whole file
-        result[8] = 7  # will use CRC with ranges
+        result[8] = 100  # will use CRC with ranges
         results = Results(today, results_input, resources)
         resource_status = {"1a2b": {}}
         results.process(resource_status)
@@ -829,7 +829,7 @@ class TestResults:
                     "Size Changed": "Y",
                     "Has Hash": "Y",
                     "Hash Changed": "N",
-                    "Hash Type": "crc-as",
+                    "Hash Type": "crc-async",
                     "Update": "Y",
                     "Error": "",
                 }
@@ -923,7 +923,7 @@ class TestResults:
         result[3] = "1235"
         result[4] = False
         result[5] = False
-        result[8] = 7
+        result[8] = 100
         results = Results(today, results_input, broken_resources)
         resource_status = {}
         results.process(resource_status)
@@ -949,7 +949,7 @@ class TestResults:
                     "Size Changed": "Y",
                     "Has Hash": "Y",
                     "Hash Changed": "Y",
-                    "Hash Type": "crc-as",
+                    "Hash Type": "crc-async",
                     "Update": "Y",
                     "Error": "",
                 }
@@ -1001,7 +1001,7 @@ class TestResults:
                     "Size Changed": "Y",
                     "Has Hash": "Y",
                     "Hash Changed": "Y",
-                    "Hash Type": "crc",
+                    "Hash Type": "crc-all",
                     "Update": "Y",
                     "Error": "",
                 }
@@ -1085,7 +1085,7 @@ class TestResults:
                     "Size Changed": "N",
                     "Has Hash": "Y",
                     "Hash Changed": "N",
-                    "Hash Type": "crc",
+                    "Hash Type": "crc-all",
                     "Update": "N",
                     "Error": "",
                 },
@@ -1108,7 +1108,7 @@ class TestResults:
                     "Size Changed": "N",
                     "Has Hash": "Y",
                     "Hash Changed": "N",
-                    "Hash Type": "crc",
+                    "Hash Type": "crc-all",
                     "Update": "N",
                     "Error": "",
                 },
@@ -1131,7 +1131,7 @@ class TestResults:
                     "Size Changed": "N",
                     "Has Hash": "Y",
                     "Hash Changed": "N",
-                    "Hash Type": "crc",
+                    "Hash Type": "crc-all",
                     "Update": "N",
                     "Error": "",
                 },
@@ -1154,7 +1154,7 @@ class TestResults:
                     "Size Changed": "N",
                     "Has Hash": "Y",
                     "Hash Changed": "N",
-                    "Hash Type": "crc",
+                    "Hash Type": "crc-all",
                     "Update": "N",
                     "Error": "",
                 },
@@ -1177,7 +1177,7 @@ class TestResults:
                     "Size Changed": "N",
                     "Has Hash": "Y",
                     "Hash Changed": "N",
-                    "Hash Type": "crc",
+                    "Hash Type": "crc-all",
                     "Update": "N",
                     "Error": "",
                 },
@@ -1200,7 +1200,7 @@ class TestResults:
                     "Size Changed": "N",
                     "Has Hash": "Y",
                     "Hash Changed": "N",
-                    "Hash Type": "crc",
+                    "Hash Type": "crc-all",
                     "Update": "N",
                     "Error": "",
                 },
@@ -1250,7 +1250,7 @@ class TestResults:
                     "Size Changed": "N",
                     "Has Hash": "Y",
                     "Hash Changed": "N",
-                    "Hash Type": "crc",
+                    "Hash Type": "crc-all",
                     "Update": "N",
                     "Error": "",
                 },
@@ -1273,7 +1273,7 @@ class TestResults:
                     "Size Changed": "N",
                     "Has Hash": "Y",
                     "Hash Changed": "N",
-                    "Hash Type": "crc",
+                    "Hash Type": "crc-all",
                     "Update": "N",
                     "Error": "",
                 },
@@ -1296,7 +1296,7 @@ class TestResults:
                     "Size Changed": "N",
                     "Has Hash": "Y",
                     "Hash Changed": "N",
-                    "Hash Type": "crc",
+                    "Hash Type": "crc-all",
                     "Update": "N",
                     "Error": "",
                 },
@@ -1319,7 +1319,7 @@ class TestResults:
                     "Size Changed": "Y",
                     "Has Hash": "Y",
                     "Hash Changed": "Y",
-                    "Hash Type": "crc",
+                    "Hash Type": "crc-all",
                     "Update": "Y",
                     "Error": "",
                 },
@@ -1342,7 +1342,7 @@ class TestResults:
                     "Size Changed": "Y",
                     "Has Hash": "Y",
                     "Hash Changed": "Y",
-                    "Hash Type": "crc",
+                    "Hash Type": "crc-all",
                     "Update": "Y",
                     "Error": "",
                 },
@@ -1365,7 +1365,7 @@ class TestResults:
                     "Size Changed": "Y",
                     "Has Hash": "Y",
                     "Hash Changed": "Y",
-                    "Hash Type": "crc",
+                    "Hash Type": "crc-all",
                     "Update": "Y",
                     "Error": "",
                 },
@@ -1434,7 +1434,7 @@ class TestResults:
                     "Size Changed": "Y",
                     "Has Hash": "Y",
                     "Hash Changed": "Y",
-                    "Hash Type": "crc",
+                    "Hash Type": "crc-all",
                     "Update": "Y",
                     "Error": "",
                 }
@@ -1455,3 +1455,58 @@ class TestResults:
                 }
             },
         )
+
+    def test_remaining_results(self):
+        today = datetime(2019, 11, 10, 8, 4, 27, tzinfo=timezone.utc)
+
+        # --- Missing Hash Type Coverage ---
+        # The following loops through the remaining uncovered status codes
+        # to verify their corresponding 'Hash Type' string assignments.
+
+        resource_hash_test = (
+            "5eaf2ecd-0b29-46cd-bddb-9c2317c9b8e5",
+            "a8b51b81-1fa7-499d-a9f2-3d0bce06b5b5",
+            "https://test.com/myfile.xlsx",
+            "xlsx",
+            "1234",
+            357102,
+            datetime(2019, 11, 10, 8, 4, 26, tzinfo=timezone.utc),
+            False,
+        )
+        resources_hash_test = {"1a2b": resource_hash_test}
+
+        # Base result with a valid final_hash (result[3])
+        # so it reliably enters the `if final_hash:` block.
+        base_result = [
+            357102,
+            "Sun, 10 Nov 2019 08:04:26 GMT",
+            "4867",
+            "new_hash_123",  # different hash to trigger 'Hash Changed'
+            True,
+            True,
+            True,
+            200,
+            0,  # status placeholder
+        ]
+
+        missing_hash_types = {
+            1: "md5-nozip",
+            10: "etag-same",
+            101: "etag-asfb",
+            111: "md5-nozip-asfb",
+            112: "md5-excel-asfb",
+            113: "crc-all-asfb",
+            114: "md5-fb-asfb",
+            115: "md5-zip-asfb",
+            999: "",  # default case fallback (_)
+        }
+
+        for status_code, expected_hash_type in missing_hash_types.items():
+            base_result[8] = status_code
+            results_input = {"1a2b": list(base_result)}
+
+            results = Results(today, results_input, resources_hash_test)
+            resource_status = {}
+            results.process(resource_status)
+
+            check.equal(resource_status["1a2b"]["Hash Type"], expected_hash_type)

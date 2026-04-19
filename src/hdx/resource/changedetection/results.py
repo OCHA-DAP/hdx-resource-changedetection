@@ -105,19 +105,35 @@ class Results:
             if final_hash:
                 match status:
                     case 1:
-                        log_status["Hash Type"] = "md5"
+                        log_status["Hash Type"] = "md5-nozip"
                     case 2:
-                        log_status["Hash Type"] = "md5-xl"
+                        log_status["Hash Type"] = "md5-excel"
                     case 3:
-                        log_status["Hash Type"] = "crc"
+                        log_status["Hash Type"] = "crc-all"
                     case 4:
                         log_status["Hash Type"] = "md5-fb"
                     case 5:
-                        log_status["Hash Type"] = "etag"
-                    case 6:
-                        log_status["Hash Type"] = "etag-sz"
-                    case 7:
-                        log_status["Hash Type"] = "crc-as"
+                        log_status["Hash Type"] = "md5-zip"
+                    case 10:
+                        log_status["Hash Type"] = "etag-same"
+                    case 11:
+                        log_status["Hash Type"] = "etag-size"
+                    case 12:
+                        log_status["Hash Type"] = "etag-nozip"
+                    case 100:
+                        log_status["Hash Type"] = "crc-async"
+                    case 101:
+                        log_status["Hash Type"] = "etag-asfb"
+                    case 111:
+                        log_status["Hash Type"] = "md5-nozip-asfb"
+                    case 112:
+                        log_status["Hash Type"] = "md5-excel-asfb"
+                    case 113:
+                        log_status["Hash Type"] = "crc-all-asfb"
+                    case 114:
+                        log_status["Hash Type"] = "md5-fb-asfb"
+                    case 115:
+                        log_status["Hash Type"] = "md5-zip-asfb"
                     case _:
                         log_status["Hash Type"] = ""
                 log_status["Has Hash"] = "Y"

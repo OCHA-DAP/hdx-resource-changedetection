@@ -41,7 +41,7 @@ class TestRetrieve:
                 True,
                 None,
                 200,
-                5,
+                12,
             ),
         )
         check.equal(
@@ -69,7 +69,7 @@ class TestRetrieve:
                 True,
                 None,
                 200,
-                5,
+                12,
             ),
         )
         check.equal(
@@ -83,7 +83,7 @@ class TestRetrieve:
                 True,
                 None,
                 200,
-                5,
+                12,
             ),
         )
         check.equal(
@@ -111,7 +111,7 @@ class TestRetrieve:
                 None,
                 None,
                 200,
-                5,
+                12,
             ),
         )
         check.equal(
@@ -125,7 +125,7 @@ class TestRetrieve:
                 False,
                 None,
                 200,
-                5,
+                12,
             ),
         )
         check.equal(
@@ -139,7 +139,7 @@ class TestRetrieve:
                 False,
                 None,
                 200,
-                5,
+                12,
             ),
         )
         check.equal(
@@ -211,6 +211,28 @@ class TestRetrieve:
                 True,
                 None,
                 200,
-                7,
+                100,
             ),
         )
+
+    def test_retrieval_status_10_etag_match(self):
+        """Status 10: Server returns an ETag that matches our existing_hash."""
+        url = "https://data.humdata.org/dataset/ea1d4259-040c-40bd-b1b3-eee9caadf9d3/resource/12b59516-5839-48ce-a13e-3e6d5455dc43/download/pcn_children_under_five_2020_geotiff.zip"
+        retrieval_obj = Retrieval("test", {"data.humdata.org"})
+
+        # 1. Fetch once to retrieve the live server's ETag
+        urls_initial = [("1", "id_1", url, "zip", None, None, None, "N")]
+        res_initial = retrieval_obj.retrieve(urls_initial)
+
+        # Index 2 is the ETag!
+        live_etag = res_initial["id_1"][2]
+
+        # Ensure the server actually provided an ETag before proceeding
+        assert live_etag is not None, "Server did not return an ETag."
+
+        # 2. Fetch again, passing the valid ETag as our existing_hash
+        urls_match = [("1", "id_1", url, "zip", live_etag, None, None, "N")]
+        res_match = retrieval_obj.retrieve(urls_match)
+
+        # Now it will correctly match and short-circuit to 10
+        check.equal(res_match["id_1"][8], 10)

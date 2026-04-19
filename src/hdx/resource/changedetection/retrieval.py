@@ -150,7 +150,7 @@ class Retrieval:
                         size += len(remaining_chunk)
                         md5_stream.update(remaining_chunk)
 
-                    return md5_stream.hexdigest(), 1, size
+                    return md5_stream.hexdigest(), 5, size
 
                 # If still under limit, keep buffering
                 size = newsize
@@ -251,7 +251,7 @@ class Retrieval:
                     mime_match,
                     size_match,
                     http_status,
-                    6,
+                    10,
                 )
 
             # 2: Does it need a CRC check?
@@ -279,7 +279,7 @@ class Retrieval:
                         mime_match,
                         size_match,
                         http_status,
-                        6,
+                        11,
                     )
 
                 if etag and signature != zip_signature:
@@ -293,7 +293,7 @@ class Retrieval:
                         mime_match,
                         size_match,
                         http_status,
-                        5,
+                        12,
                     )
 
                 # 4: Hard cap for massive files without ETags
@@ -347,7 +347,7 @@ class Retrieval:
                     mime_match,
                     size_match,
                     http_status,
-                    7,
+                    100,
                 )
 
             # --- YOUR FALLBACK LOGIC RESTORED ---
@@ -364,7 +364,7 @@ class Retrieval:
                     mime_match,
                     size_match,
                     http_status,
-                    6,
+                    101,
                 )
 
             # Fallback 2: Hard cap for massive files without ETags
@@ -412,7 +412,7 @@ class Retrieval:
                     mime_match,
                     size_match,
                     fallback_response.status,
-                    status,
+                    110 + status,
                 )
 
     async def process(

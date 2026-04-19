@@ -50,9 +50,10 @@ dependencies = [
 [dependency-groups]
 dev = [
     "pytest",
+    "pytest-asyncio",
     "pytest-check",
     "pytest-cov",
-    "pytest-asyncio",
+    "pytest-mock",
     "pre-commit",
     "ruff==0.15.7",
 ]
