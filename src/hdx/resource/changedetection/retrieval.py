@@ -82,14 +82,7 @@ class Retrieval:
     ) -> None:
         self._user_agent = user_agent
         self._xlsx_url_ignore: str | None = xlsx_url_ignore
-
-        # Apply the limit based on the host
-        self._rate_limiters = {}
-        for netloc in netlocs:
-            if is_filestore_host(netloc):
-                self._rate_limiters[netloc] = AsyncLimiter(FILESTORE_LIMIT_PER_HOST, 1)
-            else:
-                self._rate_limiters[netloc] = AsyncLimiter(DEFAULT_LIMIT_PER_HOST, 1)
+        self._netlocs = netlocs
 
     @retry(
         reraise=True,
@@ -490,6 +483,15 @@ class Retrieval:
         Returns:
             Dict[str, Tuple]: Resources information
         """
+
+        # Initialise rate limiters based on the host
+        self._rate_limiters = {}
+        for netloc in self._netlocs:
+            if is_filestore_host(netloc):
+                self._rate_limiters[netloc] = AsyncLimiter(FILESTORE_LIMIT_PER_HOST, 1)
+            else:
+                self._rate_limiters[netloc] = AsyncLimiter(DEFAULT_LIMIT_PER_HOST, 1)
+
         tasks = []
         # ==========================================
         # 1. EVENT LOOP LIMITER
