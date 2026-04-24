@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from os.path import join
 from urllib.parse import urlsplit
 
-from hdx.scraper.framework.utilities.reader import Read
+from hdx.pipelineutils.reader import Read
 from hdx.utilities.dateparse import parse_date
 from hdx.utilities.path import temp_dir
 

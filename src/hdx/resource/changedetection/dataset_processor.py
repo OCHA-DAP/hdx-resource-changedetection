@@ -3,7 +3,7 @@ from urllib.parse import urlsplit
 
 from hdx.api.configuration import Configuration
 from hdx.data.dataset import Dataset
-from hdx.scraper.framework.utilities.reader import Read
+from hdx.pipelineutils.reader import Read
 from hdx.utilities.dateparse import parse_date
 
 from hdx.resource.changedetection.utilities import list_distribute_contents

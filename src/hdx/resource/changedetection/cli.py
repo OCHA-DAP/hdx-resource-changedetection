@@ -7,7 +7,7 @@ from urllib.parse import urlsplit
 from hdx.api.configuration import Configuration
 from hdx.data.user import User
 from hdx.facades.infer_arguments import facade
-from hdx.scraper.framework.utilities.reader import Read
+from hdx.pipelineutils.reader import Read
 from hdx.utilities.dateparse import now_utc
 from hdx.utilities.path import (
     script_dir_plus_file,
