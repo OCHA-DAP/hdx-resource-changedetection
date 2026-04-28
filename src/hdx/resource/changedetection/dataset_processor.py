@@ -72,7 +72,7 @@ class DatasetProcessor:
 
     def get_distributed_resources_to_check(self) -> list[tuple]:
         def get_netloc(x):
-            return urlsplit(x[0]).netloc
+            return urlsplit(x[2]).netloc
 
         return list_distribute_contents(list(self._resources.values()), get_netloc)
 

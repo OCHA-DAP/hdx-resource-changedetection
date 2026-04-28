@@ -80,7 +80,7 @@ def urls():
 
 @pytest.fixture(scope="session")
 def netlocs(urls):
-    return {urlsplit(x[0]).netloc for x in urls}
+    return {urlsplit(x[2]).netloc for x in urls}
 
 
 @pytest.fixture(scope="session")

@@ -24,7 +24,7 @@ class TestRetrieveLarge:
         ]
         result = Retrieval(
             "test",
-            {"https://data.worldpop.org/"},
+            {"data.worldpop.org"},
         ).retrieve(urls)
         check.equal(
             result["1"],

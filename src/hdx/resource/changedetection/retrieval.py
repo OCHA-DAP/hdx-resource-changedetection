@@ -64,6 +64,9 @@ FILESTORE_LIMIT_PER_HOST = 10
 # Set limit per host for all other resources
 DEFAULT_LIMIT_PER_HOST = 4
 
+# Maximum number of asyncio tasks created at once to cap event-loop memory footprint
+TASK_CHUNK_SIZE = 500
+
 
 class Retrieval:
     """Retrieval class for downloading and hashing resources.
@@ -111,6 +114,11 @@ class Retrieval:
         async with session.get(
             url, headers=headers_cd, allow_redirects=True
         ) as response:
+            if response.status != 206:
+                logger.warning(
+                    f"Server ignored Range request for central directory on {url} (Status: {response.status})"
+                )
+                return ""
             cd_data = await response.read()
         file_crcs = parse_central_directory(cd_data, total_records)
         if not file_crcs:
@@ -184,7 +192,7 @@ class Retrieval:
         resource_id: str,
         url: str,
         resource_format: str,
-        existing_hash: str,
+        existing_hash: str | None,
         session: ClientSession,
     ) -> tuple:
         """Asynchronous code to get http headers for a resource. Returns a
@@ -194,7 +202,7 @@ class Retrieval:
             resource_id (str): Resource id
             url (str): Resource to get
             resource_format (str): Resource format
-            existing_hash (str): Existing hash
+            existing_hash (str | None): Existing hash
             session (Union[ClientSession, RateLimiter]): session to use for requests
 
         Returns:
@@ -492,14 +500,6 @@ class Retrieval:
             else:
                 self._rate_limiters[netloc] = AsyncLimiter(DEFAULT_LIMIT_PER_HOST, 1)
 
-        tasks = []
-        # ==========================================
-        # 1. EVENT LOOP LIMITER
-        # ==========================================
-        # Keeps the Jenkins CPU and base memory footprint healthy by preventing
-        # thousands of tasks from being scheduled on the event loop simultaneously.
-        task_semaphore = asyncio.Semaphore(500)
-
         # ==========================================
         # CUSTOM PER-HOST CONCURRENCY
         # ==========================================
@@ -517,11 +517,8 @@ class Retrieval:
         async def sem_process(metadata, session):
             url = metadata[2]
             host = urlsplit(url).netloc
-
-            async with task_semaphore:
-                # Enforce the specific limit for this host
-                async with host_semaphores[host]:
-                    return await self.process(metadata, session)
+            async with host_semaphores[host]:
+                return await self.process(metadata, session)
 
         # ==========================================
         # 2. GLOBAL CONNECTION LIMITER
@@ -542,38 +539,40 @@ class Retrieval:
             timeout=timeout,
             headers={"User-Agent": self._user_agent},
         ) as session:
-            # Queue up the tasks using the new semaphored wrapper
-            for metadata in resources_to_check:
-                task = asyncio.create_task(sem_process(metadata, session))
-                tasks.append(task)
-
+            resources_list = list(resources_to_check)
             responses = {}
-            # Process them as they complete
-            for f in tqdm_asyncio.as_completed(tasks, total=len(tasks)):
-                (
-                    resource_id,
-                    size,
-                    last_modified,
-                    etag,
-                    final_hash,
-                    sig_match,
-                    mime_match,
-                    size_match,
-                    http_status,
-                    status,
-                ) = await f
+            with tqdm_asyncio(total=len(resources_list)) as pbar:
+                for i in range(0, len(resources_list), TASK_CHUNK_SIZE):
+                    chunk = resources_list[i : i + TASK_CHUNK_SIZE]
+                    tasks = [
+                        asyncio.create_task(sem_process(m, session)) for m in chunk
+                    ]
+                    for f in asyncio.as_completed(tasks):
+                        (
+                            resource_id,
+                            size,
+                            last_modified,
+                            etag,
+                            final_hash,
+                            sig_match,
+                            mime_match,
+                            size_match,
+                            http_status,
+                            status,
+                        ) = await f
 
-                responses[resource_id] = (
-                    size,
-                    last_modified,
-                    etag,
-                    final_hash,
-                    sig_match,
-                    mime_match,
-                    size_match,
-                    http_status,
-                    status,
-                )
+                        responses[resource_id] = (
+                            size,
+                            last_modified,
+                            etag,
+                            final_hash,
+                            sig_match,
+                            mime_match,
+                            size_match,
+                            http_status,
+                            status,
+                        )
+                        pbar.update(1)
         return responses
 
     def retrieve(self, resources_to_check: list[tuple]) -> dict[str, tuple]:

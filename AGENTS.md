@@ -71,6 +71,17 @@ python -m hdx.resource.changedetection
 hdx-resource-changedetection
 ```
 
+## Changelog
+
+`CHANGELOG.md` follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format. Add an entry under `[Unreleased]` (creating the section if it doesn't exist) whenever you make a change that falls into one of these categories:
+
+- **Added** — new features or capabilities
+- **Changed** — behaviour changes, architectural refactors, or notable performance improvements
+- **Fixed** — bug fixes
+- **Removed** — removed features or code
+
+Do not add entries for pure style/formatting fixes, comment updates, or test-only changes that don't affect production behaviour.
+
 ## Scope of Changes
 
 When fixing a bug or addressing PR feedback, change only what is necessary to resolve the specific issue. Do not refactor surrounding code, rename variables, adjust formatting, or make improvements in the same commit unless they are directly required by the fix. Unrelated changes obscure the intent of the fix and complicate review and blame.
