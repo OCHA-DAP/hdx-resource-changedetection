@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Changed
 
 - `check_urls()` now creates asyncio tasks in chunks of `TASK_CHUNK_SIZE` (500) rather than all upfront, so the event-loop task count is bounded regardless of the total number of resources.
+- `ZIP_SIZE_THRESHOLD` raised from 75 MB to 100 MB to reflect 2 GB server memory; worst-case in-memory ZIP buffer across 13 concurrent connections is now ~1.3 GB, leaving ~300 MB headroom after OS/interpreter overhead.
 
 ### Fixed
 

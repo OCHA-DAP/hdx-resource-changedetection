@@ -56,7 +56,7 @@ CRC_SIZE_THRESHOLD = 31457280
 
 # Set file size threshold above which we stream and hash xlsx and zips rather than
 # trying to hold in memory
-ZIP_SIZE_THRESHOLD = 78643200
+ZIP_SIZE_THRESHOLD = 104857600
 
 # Set limit per host for filestore resources
 FILESTORE_LIMIT_PER_HOST = 10
