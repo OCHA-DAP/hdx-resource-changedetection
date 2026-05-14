@@ -8,32 +8,147 @@ build-backend = "hatchling.build"
 
 [project]
 name = "hdx-resource-changedetection"
-requires-python = ">= 3.10"
+description = "HDX resource change detection"
+license = {text = "MIT"}
+keywords = ["HDX", "humanitarian data exchange", "change detection"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: Unix",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+]
+readme = "README.md"
+dynamic = ["version"]
+requires-python = ">=3.10"
 
 dependencies = [
     "aiohttp[speedups]",
     "aiolimiter",
-    "hdx-python-scraper>= 2.7.0",
-    "hdx-python-api>= 6.6.0",
-    "hdx-python-country>= 4.0.0",
-    "hdx-python-utilities>= 4.0.0",
+    "hdx-python-api>= 6.6.7",
+    "hdx-python-country>= 4.1.1",
+    "hdx-python-pipelineutils>= 0.0.3",
+    "hdx-python-utilities>= 4.0.8",
     "prettytable",
     "redis",
     "tenacity",
-    "tqdm"
+    "tqdm",
 ]
-dynamic = ["version"]
 
-[project.readme]
-file = "README.md"
-content-type = "text/markdown"
+[dependency-groups]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "pytest-check",
+    "pytest-cov",
+    "pytest-mock",
+    "pre-commit",
+    "ruff==0.15.7",
+]
+
+
+[project.scripts]
+hdx-resource-changedetection = "hdx.resource.changedetection.cli:run_cli"
 
 [project.urls]
 Homepage = "https://github.com/OCHA-DAP/hdx-resource-changedetection"
 
-[project.optional-dependencies]
-test = ["pytest", "pytest-check", "pytest-cov", "pytest-asyncio"]
-dev = ["pre-commit"]
+# ----------------------------------------------------------------------------
+# Hatchling (Build & Versioning)
+# ----------------------------------------------------------------------------
 
-[project.scripts]
-run = "hdx.resource.changedetection.__main__:main"
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.version.raw-options]
+local_scheme = "no-local-version"
+version_scheme = "python-simplified-semver"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "src/hdx/resource/changedetection/_version.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/hdx"]
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+# ----------------------------------------------------------------------------
+# Ruff (Linting & Formatting)
+# ----------------------------------------------------------------------------
+
+[tool.ruff]
+target-version = "py310"
+src = ["src"]
+exclude = ["_version.py"]
+
+[tool.ruff.lint]
+# Defaults are E (pycodestyle) and F (pyflakes). We extend them:
+extend-select = [
+  "I",   # isort
+  "UP",  # pyupgrade
+]
+ignore = [
+    "E501", # Line too long
+]
+
+[tool.ruff.lint.isort]
+known-local-folder = ["hdx.resource.changedetection"]
+known-third-party = [
+    "hdx.api",
+    "hdx.data",
+    "hdx.facades",
+    "hdx.location",
+    "hdx.utilities",
+]
+
+# ----------------------------------------------------------------------------
+# Pytest (Testing)
+# ----------------------------------------------------------------------------
+
+[tool.pytest.ini_options]
+pythonpath = "src"
+log_cli = true
+addopts = """
+    --color=yes
+    --rootdir=.
+    --junitxml=test-results.xml
+    --cov
+    --no-cov-on-fail
+    --cov-report=lcov
+    --cov-report=term-missing
+"""
+
+# ----------------------------------------------------------------------------
+# Coverage (Reporting)
+# ----------------------------------------------------------------------------
+
+[tool.coverage.run]
+source = ["src"]
+omit = ["*/_version.py"]
+
+[tool.coverage.report]
+exclude_also = [
+    "from ._version",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "@(abc\\.)?abstractmethod",
+]

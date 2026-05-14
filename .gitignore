@@ -50,6 +50,8 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 cover/
+coverage.lcov
+test-results.xml
 
 # Translations
 *.mo
@@ -166,7 +168,8 @@ _version.py
 #OS Files
 *DS_Store
 
-# Projet specific files that should be ignored
+# Project specific files that should be ignored
 .useragents.yaml
 .hdx_configuration.yaml
 saved_data/
+/*.csv

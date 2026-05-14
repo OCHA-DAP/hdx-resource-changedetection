@@ -6,7 +6,7 @@ from hdx.api.configuration import Configuration
 from hdx.utilities.path import script_dir_plus_file
 from hdx.utilities.useragent import UserAgent
 
-from hdx.resource.changedetection.__main__ import main
+from hdx.resource.changedetection.cli import run_cli
 
 
 def pytest_addoption(parser):
@@ -56,31 +56,31 @@ def urls():
     url16 = "https://raw.githubusercontent.com/OCHA-DAP/hdx-python-utilities/refs/heads/main/tests/fixtures/file_hashing/bad_index.xlsx"
     url17 = "https://data.humdata.org/dataset/bcf8a4bb-5253-4065-ae34-6e8cdcb90d57/resource/fbadf0c3-ff99-4cad-91a6-010d3b028e84/download/daily_tmax_cnt_tmaxgt30c_01.zip"
     return [
-        (url1, "1", "html"),
-        (url2, "2", "csv"),
-        (url3, "3", "csv"),
-        (url4, "4", "geojson"),
-        (url5, "5", "shp"),
-        (url6, "6", "csv"),
-        (url7, "7", "xls"),
-        (url8, "8", "xlsx"),
-        (url9, "9", "html"),
-        (url9, "10", "csv"),
-        (url9, "11", "xls"),
-        (url10, "12", "geojson"),
-        (url11, "13", "csv"),
-        (url12, "14", "csv"),
-        (url13, "15", "geojson"),
-        (url14, "16", "csv"),
-        (url15, "17", "xlsx"),
-        (url16, "18", "xlsx"),
-        (url17, "19", "zip"),
+        ("1", "1", url1, "html", None, None, None, "N"),
+        ("2", "2", url2, "csv", None, None, None, "N"),
+        ("3", "3", url3, "csv", None, None, None, "N"),
+        ("4", "4", url4, "geojson", None, None, None, "N"),
+        ("5", "5", url5, "shp", None, None, None, "N"),
+        ("6", "6", url6, "csv", None, None, None, "N"),
+        ("7", "7", url7, "xls", None, None, None, "N"),
+        ("8", "8", url8, "xlsx", None, None, None, "N"),
+        ("9", "9", url9, "html", None, None, None, "N"),
+        ("10", "10", url9, "csv", None, None, None, "N"),
+        ("11", "11", url9, "xls", None, None, None, "N"),
+        ("12", "12", url10, "geojson", None, None, None, "N"),
+        ("13", "13", url11, "csv", None, None, None, "N"),
+        ("14", "14", url12, "csv", None, None, None, "N"),
+        ("15", "15", url13, "geojson", None, None, None, "N"),
+        ("16", "16", url14, "csv", None, None, None, "N"),
+        ("17", "17", url15, "xlsx", None, None, None, "N"),
+        ("18", "18", url16, "xlsx", None, None, None, "N"),
+        ("19", "19", url17, "zip", None, None, None, "N"),
     ]
 
 
 @pytest.fixture(scope="session")
 def netlocs(urls):
-    return {urlsplit(x[0]).netloc for x in urls}
+    return {urlsplit(x[2]).netloc for x in urls}
 
 
 @pytest.fixture(scope="session")
@@ -90,7 +90,7 @@ def configuration():
         hdx_read_only=True,
         hdx_site="prod",
         project_config_yaml=script_dir_plus_file(
-            join("config", "project_configuration.yaml"), main
+            join("config", "project_configuration.yaml"), run_cli
         ),
     )
     return Configuration.read()

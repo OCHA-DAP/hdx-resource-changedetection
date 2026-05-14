@@ -3,9 +3,10 @@ from urllib.parse import urlsplit
 
 from hdx.api.configuration import Configuration
 from hdx.data.dataset import Dataset
-from hdx.scraper.framework.utilities.reader import Read
+from hdx.pipelineutils.reader import Read
 from hdx.utilities.dateparse import parse_date
-from hdx.utilities.dictandlist import list_distribute_contents
+
+from hdx.resource.changedetection.utilities import list_distribute_contents
 
 
 class DatasetProcessor:
@@ -56,13 +57,13 @@ class DatasetProcessor:
                 hash = resource.get("hash")
                 broken = resource.get("broken_link", False)
                 self._resources[resource_id] = (
-                    url,
-                    resource_id,
-                    resource_format,
                     dataset_id,
+                    resource_id,
+                    url,
+                    resource_format,
+                    hash,
                     size,
                     last_modified,
-                    hash,
                     broken,
                 )
 
@@ -71,7 +72,7 @@ class DatasetProcessor:
 
     def get_distributed_resources_to_check(self) -> list[tuple]:
         def get_netloc(x):
-            return urlsplit(x[0]).netloc
+            return urlsplit(x[2]).netloc
 
         return list_distribute_contents(list(self._resources.values()), get_netloc)
 

@@ -29,17 +29,17 @@ class Results:
         for resource_id, result in self._results.items():
             log_status = get_blank_log_status()
             resource = self._resources[resource_id]
-            existing_hash = resource[6]
+            existing_hash = resource[4]
             if existing_hash:
                 log_status["Existing Hash"] = "Y"
             else:
                 log_status["Existing Hash"] = "N"
-            existing_size = resource[4]
+            existing_size = resource[5]
             if existing_size:
                 log_status["Existing Size"] = "Y"
             else:
                 log_status["Existing Size"] = "N"
-            resource_date = resource[5]
+            resource_date = resource[6]
             if resource_date:
                 log_status["Existing Modified"] = "Y"
             else:
@@ -49,7 +49,7 @@ class Results:
                 log_status["Existing Broken"] = "Y"
             else:
                 log_status["Existing Broken"] = "N"
-            dataset_id = resource[3]
+            dataset_id = resource[0]
             (
                 size,
                 last_modified,
@@ -105,23 +105,39 @@ class Results:
             if final_hash:
                 match status:
                     case 1:
-                        log_status["Hash Type"] = "md5"
+                        log_status["Hash Type"] = "md5-nozip"
                     case 2:
-                        log_status["Hash Type"] = "md5-xl"
+                        log_status["Hash Type"] = "md5-excel"
                     case 3:
-                        log_status["Hash Type"] = "crc"
+                        log_status["Hash Type"] = "crc-all"
                     case 4:
                         log_status["Hash Type"] = "md5-fb"
                     case 5:
-                        log_status["Hash Type"] = "etag"
-                    case 6:
-                        log_status["Hash Type"] = "etag-sz"
-                    case 7:
-                        log_status["Hash Type"] = "crc-as"
+                        log_status["Hash Type"] = "md5-zip"
+                    case 10:
+                        log_status["Hash Type"] = "etag-same"
+                    case 11:
+                        log_status["Hash Type"] = "etag-size"
+                    case 12:
+                        log_status["Hash Type"] = "etag-nozip"
+                    case 100:
+                        log_status["Hash Type"] = "crc-async"
+                    case 101:
+                        log_status["Hash Type"] = "etag-asfb"
+                    case 111:
+                        log_status["Hash Type"] = "md5-nozip-asfb"
+                    case 112:
+                        log_status["Hash Type"] = "md5-excel-asfb"
+                    case 113:
+                        log_status["Hash Type"] = "crc-all-asfb"
+                    case 114:
+                        log_status["Hash Type"] = "md5-fb-asfb"
+                    case 115:
+                        log_status["Hash Type"] = "md5-zip-asfb"
                     case _:
                         log_status["Hash Type"] = ""
                 log_status["Has Hash"] = "Y"
-                if final_hash != resource[6]:
+                if final_hash != existing_hash:
                     if log_status["Hash Type"]:
                         resource_info["hash"] = final_hash
                         hash_changed = True
@@ -131,13 +147,13 @@ class Results:
                     log_status["Hash Changed"] = "N"
             else:
                 log_status["Has Hash"] = "N"
-                if resource[6]:
+                if existing_hash:
                     log_status["Hash Changed"] = "Y"
                 else:
                     log_status["Hash Changed"] = "N"
             if size:
                 log_status["Has Size"] = "Y"
-                if size != resource[4]:
+                if size != existing_size:
                     log_status["Size Changed"] = "Y"
                     resource_info["size"] = size
                     update = True
@@ -145,12 +161,11 @@ class Results:
                     log_status["Size Changed"] = "N"
             else:
                 log_status["Has Size"] = "N"
-                if resource[4]:
+                if existing_size:
                     log_status["Size Changed"] = "Y"
                 else:
                     log_status["Size Changed"] = "N"
 
-            resource_date = resource[5]
             if last_modified:
                 log_status["Has Modified"] = "Y"
                 last_modified = parse_date(last_modified)

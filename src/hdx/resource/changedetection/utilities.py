@@ -1,5 +1,9 @@
+import itertools
 import logging
+from collections import defaultdict
+from collections.abc import Callable, Sequence
 from http import HTTPStatus
+from typing import Any
 
 import aiohttp
 from hdx.utilities.saver import save_iterable
@@ -100,3 +104,39 @@ def revise_resource(
         resource_info["broken_link"] = False
     dataset_to_revise[f"update__resources__{resource_id}"] = resource_info
     datasets_to_revise[dataset_id] = dataset_to_revise
+
+
+def list_distribute_contents(
+    input_list: Sequence,
+    function: Callable[[Any], Any] = lambda x: x,
+    chunk_size: int = 15,
+) -> list:
+    """
+    Distribute the contents of a list by interleaving chunks.
+    This prevents 'Keep-Alive' connection thrashing in aiohttp.
+    """
+    if not input_list:
+        return []
+
+    # 1. Group everything by host
+    dictionary = defaultdict(list)
+    for obj in input_list:
+        dictionary[function(obj)].append(obj)
+
+    # 2. Break each host's massive list into smaller chunks
+    chunked_piles = []
+    for key in sorted(dictionary.keys()):
+        pile = dictionary[key]
+        # Slice the pile into chunks of `chunk_size`
+        chunks = [pile[i : i + chunk_size] for i in range(0, len(pile), chunk_size)]
+        chunked_piles.append(chunks)
+
+    # 3. Interleave the chunks
+    # zip_longest takes one chunk from Host A, one from Host B, etc., then loops.
+    result = []
+    for interleaved_chunks in itertools.zip_longest(*chunked_piles):
+        for chunk in interleaved_chunks:
+            if chunk is not None:
+                result.extend(chunk)
+
+    return result
